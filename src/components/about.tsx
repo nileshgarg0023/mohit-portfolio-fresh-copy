@@ -1,11 +1,39 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import { motion, useInView, useScroll, useTransform } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
+import type { Profile } from '@/lib/supabase'
 
 export default function About() {
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, margin: "-100px" })
+  
+  // Fetch profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profile')
+          .select('*')
+          .single()
+
+        if (error) throw error
+        setProfile(data)
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+        setError('Failed to load profile data')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [])
   
   // Parallax effect
   const { scrollYProgress } = useScroll({
@@ -19,6 +47,22 @@ export default function About() {
   
   // Hexagon grid for cybersecurity theme
   const hexagons = Array.from({ length: 20 }, (_, i) => i)
+
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-cyan-400 animate-pulse font-mono">Loading profile data...</div>
+  //     </div>
+  //   )
+  // }
+
+  // if (error || !profile) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center">
+  //       <div className="text-red-400 font-mono">{error || 'Profile not found'}</div>
+  //     </div>
+  //   )
+  // }
   
   return (
     <section 
@@ -103,27 +147,25 @@ export default function About() {
                   </div>
                   
                   <div className="text-center mb-4">
-                    <h3 className="text-xl font-bold text-white mb-1">Mohit Gera</h3>
-                    <p className="text-cyan-400 text-sm font-mono">Cybersecurity Specialist</p>
+                    <h3 className="text-xl font-bold text-white mb-1">{profile?.name}</h3>
+                    <p className="text-cyan-400 text-sm font-mono">{profile?.title}</p>
                   </div>
                   
                   <div className="space-y-3 font-mono text-xs">
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-gray-300">6+ Years Experience</span>
+                      <span className="text-gray-300">{profile?.years_of_experience}</span>
                     </div>
                     <div className="flex items-center">
                       <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-gray-300">Maruti Suzuki & TCS</span>
+                      <span className="text-gray-300">{profile?.companies}</span>
                     </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-gray-300">Security Architecture</span>
-                    </div>
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-                      <span className="text-gray-300">Threat Intelligence</span>
-                    </div>
+                    {profile?.core_competencies.slice(0, 2).map((competency, index) => (
+                      <div key={index} className="flex items-center">
+                        <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span className="text-gray-300">{competency}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </motion.div>
@@ -160,9 +202,7 @@ export default function About() {
                       isInView={isInView}
                     >
                       <p className="text-gray-300 leading-relaxed mt-2">
-                        Cybersecurity professional with 6+ years of experience in protecting critical infrastructure 
-                        and sensitive data. Specialized in threat detection, vulnerability assessment, and implementing 
-                        robust security architectures for enterprise environments.
+                        {profile?.bio}
                       </p>
                     </TerminalLine>
                     
@@ -175,19 +215,17 @@ export default function About() {
                         <div className="col-span-1">
                           <h4 className="text-cyan-400 mb-2">Core Competencies</h4>
                           <ul className="list-disc list-inside text-gray-300 space-y-1">
-                            <li>Security Architecture</li>
-                            <li>Penetration Testing</li>
-                            <li>Threat Intelligence</li>
-                            <li>Incident Response</li>
+                            {profile?.core_competencies.map((competency, index) => (
+                              <li key={index}>{competency}</li>
+                            ))}
                           </ul>
                         </div>
                         <div className="col-span-1">
                           <h4 className="text-cyan-400 mb-2">Specialized Skills</h4>
                           <ul className="list-disc list-inside text-gray-300 space-y-1">
-                            <li>Network Security</li>
-                            <li>Cloud Security</li>
-                            <li>Vulnerability Assessment</li>
-                            <li>Security Compliance</li>
+                            {profile?.specialized_skills.map((skill, index) => (
+                              <li key={index}>{skill}</li>
+                            ))}
                           </ul>
                         </div>
                       </div>
@@ -199,10 +237,7 @@ export default function About() {
                       isInView={isInView}
                     >
                       <p className="text-gray-300 leading-relaxed mt-2">
-                        I approach cybersecurity with a proactive mindset, focusing on identifying and mitigating 
-                        vulnerabilities before they can be exploited. My methodology combines technical expertise 
-                        with strategic thinking to develop comprehensive security solutions that protect against 
-                        evolving threats while enabling business objectives.
+                        {profile?.approach_text}
                       </p>
                     </TerminalLine>
                   </div>
@@ -217,10 +252,10 @@ export default function About() {
             className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12"
           >
             {[
-              { value: "50+", label: "Security Audits", icon: "🔍", delay: 0.2 },
-              { value: "100+", label: "Vulnerabilities Patched", icon: "🛡️", delay: 0.4 },
-              { value: "25+", label: "Security Architectures", icon: "🏗️", delay: 0.6 },
-              { value: "10+", label: "Certifications", icon: "🏆", delay: 0.8 }
+              { value: profile?.security_audits_count, label: "Security Audits", icon: "🔍", delay: 0.2 },
+              { value: profile?.vulnerabilities_count, label: "Vulnerabilities Patched", icon: "🛡️", delay: 0.4 },
+              { value: profile?.architectures_count, label: "Security Architectures", icon: "🏗️", delay: 0.6 },
+              { value: profile?.certifications_count, label: "Certifications", icon: "🏆", delay: 0.8 }
             ].map((stat, index) => (
               <motion.div
                 key={index}

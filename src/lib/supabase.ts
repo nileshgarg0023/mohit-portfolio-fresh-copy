@@ -8,49 +8,74 @@ export interface Profile {
   name: string;
   title: string;
   bio: string;
-  avatar_url: string;
-  email: string;
+  years_of_experience: string;
+  companies: string;
+  core_competencies: string[];
+  specialized_skills: string[];
+  approach_text: string;
+  security_audits_count: string;
+  vulnerabilities_count: string;
+  architectures_count: string;
+  certifications_count: string;
   github_url?: string;
   linkedin_url?: string;
   twitter_url?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Project {
   id: string;
   title: string;
   description: string;
+  image?: string;
   image_url?: string;
-  technologies: string[];
   github_url?: string;
   live_url?: string;
+  tags: string[];
+  details: {
+    challenge: string;
+    solution: string;
+    technologies: string[];
+    outcome: string;
+  };
+  color: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Experience {
   id: string;
   company: string;
   position: string;
-  description: string;
   start_date: string;
   end_date?: string;
   current: boolean;
+  mission: string;
+  achievements: string[];
   created_at: string;
+  updated_at: string;
 }
 
 export interface Skill {
   id: string;
   name: string;
   category: string;
-  proficiency: number;
+  level: number;
+  icon: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface Contact {
   id: string;
   name: string;
   email: string;
+  subject: string;
   message: string;
+  status: 'unread' | 'read' | 'replied';
   created_at: string;
+  updated_at: string;
 }
 
 export interface Blog {

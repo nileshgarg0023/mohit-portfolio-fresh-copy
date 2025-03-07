@@ -1,27 +1,30 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import './globals.css'
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import Navigation from '@/components/navigation'
+import { Toaster } from '@/components/ui/sonner'
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-});
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "Cybersecurity Professional Portfolio",
-  description: "Portfolio of a cybersecurity expert with 6 years of experience at Maruti Suzuki and TCS",
-};
+  title: 'Mohit Gera - Cybersecurity Specialist',
+  description: 'Portfolio of Mohit Gera, a Cybersecurity Specialist with expertise in automotive security, threat intelligence, and zero trust architecture.',
+}
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en" className="scroll-smooth">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+      <body className={`${inter.className} bg-black text-white min-h-screen`}>
+        <Navigation />
+        <main className="pt-16">
+          {children}
+        </main>
+        <Toaster />
       </body>
     </html>
-  );
+  )
 }

@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
+import type { Skill } from '@/lib/supabase'
 
 // Skill categories with cybersecurity focus
 const skillCategories = [
@@ -9,58 +11,28 @@ const skillCategories = [
     id: 'technical',
     name: 'Technical Skills',
     icon: '💻',
-    skills: [
-      { name: 'Network Security', level: 95 },
-      { name: 'Penetration Testing', level: 90 },
-      { name: 'Malware Analysis', level: 85 },
-      { name: 'Cryptography', level: 80 },
-      { name: 'Forensic Analysis', level: 85 },
-      { name: 'SIEM Implementation', level: 90 }
-    ]
   },
   {
     id: 'frameworks',
     name: 'Frameworks & Standards',
     icon: '🔧',
-    skills: [
-      { name: 'ISO 27001', level: 90 },
-      { name: 'NIST Cybersecurity', level: 95 },
-      { name: 'MITRE ATT&CK', level: 85 },
-      { name: 'OWASP Top 10', level: 90 },
-      { name: 'CIS Controls', level: 80 },
-      { name: 'GDPR Compliance', level: 85 }
-    ]
   },
   {
     id: 'tools',
     name: 'Security Tools',
     icon: '🛠️',
-    skills: [
-      { name: 'Wireshark', level: 95 },
-      { name: 'Metasploit', level: 90 },
-      { name: 'Nessus', level: 85 },
-      { name: 'Burp Suite', level: 90 },
-      { name: 'Splunk', level: 85 },
-      { name: 'Kali Linux', level: 95 }
-    ]
   },
   {
     id: 'certifications',
     name: 'Certifications',
     icon: '🏆',
-    skills: [
-      { name: 'Certified Ethical Hacker (CEH)', level: 100 },
-      { name: 'CISSP', level: 100 },
-      { name: 'CompTIA Security+', level: 100 },
-      { name: 'OSCP', level: 100 },
-      { name: 'AWS Security Specialty', level: 100 },
-      { name: 'CISM', level: 100 }
-    ]
   }
 ]
 
 export default function Skills() {
   const [activeCategory, setActiveCategory] = useState(skillCategories[0].id)
+  const [skills, setSkills] = useState<Skill[]>([])
+  const [loading, setLoading] = useState(true)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, margin: "-100px" })
   
@@ -71,6 +43,52 @@ export default function Skills() {
     y: Math.random() * 100,
     size: Math.random() * 3 + 1
   }))
+
+  useEffect(() => {
+    fetchSkills()
+  }, [])
+  
+  const fetchSkills = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('skills')
+        .select('*')
+        .order('category', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching skills:', error)
+        return
+      }
+
+      console.log('Fetched skills:', data)
+      setSkills(data || [])
+    } catch (error) {
+      console.error('Error:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Group skills by category
+  const groupedSkills = skills.reduce((acc, skill) => {
+    // Map database categories to component categories
+    const categoryMap: Record<string, string> = {
+      'technical skills': 'technical',
+      'frameworks & standards': 'frameworks',
+      'security tools': 'tools',
+      'certifications': 'certifications'
+    }
+    
+    const category = categoryMap[skill.category.toLowerCase()] || skill.category.toLowerCase()
+    console.log('Processing skill:', skill.name, 'Category:', category)
+    if (!acc[category]) {
+      acc[category] = []
+    }
+    acc[category].push(skill)
+    return acc
+  }, {} as Record<string, Skill[]>)
+  
+  console.log('Grouped skills:', groupedSkills)
   
   return (
     <section 
@@ -202,12 +220,14 @@ export default function Skills() {
                         transition={{ duration: 0.5 }}
                         className="space-y-6"
                       >
-                        {category.id === 'certifications' ? (
+                        {loading ? (
+                          <div className="text-center text-cyan-400">Loading skills...</div>
+                        ) : category.id === 'certifications' ? (
                           // Special layout for certifications
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {category.skills.map((skill, index) => (
+                            {groupedSkills[category.id]?.map((skill, index) => (
                               <motion.div
-                                key={skill.name}
+                                key={skill.id}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -216,11 +236,11 @@ export default function Skills() {
                                 <div className="absolute -inset-0.5 rounded-lg opacity-75 blur-sm bg-gradient-to-r from-cyan-500/30 to-purple-600/30 group-hover:opacity-100 transition-opacity"></div>
                                 <div className="relative p-4 rounded-lg border border-cyan-800/50 bg-black/60 flex items-center">
                                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-purple-600 flex items-center justify-center mr-3">
-                                    <span className="text-sm">🏆</span>
+                                    <span className="text-sm">{skill.icon}</span>
                                   </div>
                                   <div>
                                     <h4 className="text-sm font-medium text-white">{skill.name}</h4>
-                                    <p className="text-xs text-cyan-400 font-mono">Verified</p>
+                                    <p className="text-xs text-cyan-400 font-mono">Level: {skill.level}%</p>
                                   </div>
                                 </div>
                               </motion.div>
@@ -229,9 +249,9 @@ export default function Skills() {
                         ) : (
                           // Standard skill bars for other categories
                           <div className="space-y-5">
-                            {category.skills.map((skill, index) => (
+                            {groupedSkills[category.id]?.map((skill, index) => (
                               <motion.div
-                                key={skill.name}
+                                key={skill.id}
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.5, delay: index * 0.1 }}
