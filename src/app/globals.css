@@ -1,0 +1,456 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: var(--font-inter);
+}
+
+:root {
+  --background: oklch(0.145 0 0); /* Dark background by default */
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: oklch(0.439 0 0);
+  --radius: 0.625rem;
+
+  /* Cybersecurity theme colors */
+  --cyan: oklch(0.7 0.2 196.13);
+  --purple: oklch(0.6 0.25 296.42);
+  --sidebar: hsl(0 0% 98%);
+  --sidebar-foreground: hsl(240 5.3% 26.1%);
+  --sidebar-primary: hsl(240 5.9% 10%);
+  --sidebar-primary-foreground: hsl(0 0% 98%);
+  --sidebar-accent: hsl(240 4.8% 95.9%);
+  --sidebar-accent-foreground: hsl(240 5.9% 10%);
+  --sidebar-border: hsl(220 13% 91%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0f0f0f;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 5px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
+}
+
+/* Matrix animation for hero section */
+@keyframes matrix {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(1000%);
+    opacity: 0.5;
+  }
+}
+
+.matrix-animation {
+  position: absolute;
+  color: #22d3ee;
+  font-family: monospace;
+  font-size: 14px;
+  white-space: nowrap;
+  animation: matrix 20s linear infinite;
+  opacity: 0.3;
+}
+
+/* Gradient text animation */
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient-text {
+  background: linear-gradient(90deg, #22d3ee, #a855f7, #22d3ee);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient 3s ease infinite;
+}
+
+/* 3D Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Cyber Grid */
+.cyber-grid {
+  position: absolute;
+  inset: 0;
+  background-size: 50px 50px;
+  background-image:
+    linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+  mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 80%);
+  animation: grid-pulse 4s infinite;
+}
+
+@keyframes grid-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* Cyber Glitch Text Effect */
+.cyber-glitch-text {
+  position: relative;
+  display: inline-block;
+}
+
+.cyber-glitch-text::before,
+.cyber-glitch-text::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip: rect(0, 0, 0, 0);
+}
+
+.cyber-glitch-text::before {
+  left: 2px;
+  text-shadow: -1px 0 #00f0ff;
+  animation: cyber-glitch-1 2s infinite linear alternate-reverse;
+}
+
+.cyber-glitch-text::after {
+  left: -2px;
+  text-shadow: 1px 0 #7e0fff;
+  animation: cyber-glitch-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes cyber-glitch-1 {
+  0% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  5% {
+    clip: rect(20px, 9999px, 75px, 0);
+  }
+  10% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  15% {
+    clip: rect(20px, 9999px, 65px, 0);
+  }
+  20% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  25% {
+    clip: rect(20px, 9999px, 85px, 0);
+  }
+  30% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  45% {
+    clip: rect(20px, 9999px, 55px, 0);
+  }
+  50% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  55% {
+    clip: rect(20px, 9999px, 45px, 0);
+  }
+  60% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  75% {
+    clip: rect(20px, 9999px, 75px, 0);
+  }
+  80% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  85% {
+    clip: rect(20px, 9999px, 95px, 0);
+  }
+  90% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+  95% {
+    clip: rect(20px, 9999px, 65px, 0);
+  }
+  100% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+}
+
+@keyframes cyber-glitch-2 {
+  0% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  5% {
+    clip: rect(15px, 9999px, 70px, 0);
+  }
+  10% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  15% {
+    clip: rect(15px, 9999px, 60px, 0);
+  }
+  20% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  25% {
+    clip: rect(15px, 9999px, 80px, 0);
+  }
+  30% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  45% {
+    clip: rect(15px, 9999px, 50px, 0);
+  }
+  50% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  55% {
+    clip: rect(15px, 9999px, 40px, 0);
+  }
+  60% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  75% {
+    clip: rect(15px, 9999px, 70px, 0);
+  }
+  80% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  85% {
+    clip: rect(15px, 9999px, 90px, 0);
+  }
+  90% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+  95% {
+    clip: rect(15px, 9999px, 60px, 0);
+  }
+  100% {
+    clip: rect(15px, 9999px, 10px, 0);
+  }
+}
+
+/* Animated border */
+@keyframes border-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.5), 
+                0 0 10px rgba(0, 240, 255, 0.3), 
+                0 0 15px rgba(0, 240, 255, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.8), 
+                0 0 20px rgba(0, 240, 255, 0.5), 
+                0 0 30px rgba(0, 240, 255, 0.3);
+  }
+}
+
+.border-glow {
+  animation: border-glow 2s infinite;
+}
+
+/* Scan line effect */
+.scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(0, 240, 255, 0.1);
+  opacity: 0.75;
+  animation: scan 2s linear infinite;
+}
+
+@keyframes scan {
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
+}
+
+/* Hacker terminal text effect */
+@keyframes terminal-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 10px;
+  height: 1.2em;
+  background-color: #00f0ff;
+  animation: terminal-blink 1s step-end infinite;
+}
+
+/* Data flow animation */
+@keyframes data-flow {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+.data-flow {
+  background: linear-gradient(90deg, 
+    rgba(0, 240, 255, 0), 
+    rgba(0, 240, 255, 0.2), 
+    rgba(0, 240, 255, 0)
+  );
+  background-size: 200% 100%;
+  animation: data-flow 3s linear infinite;
+}
+
+/* Holographic effect */
+.holographic {
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 0%,
+    rgba(0, 240, 255, 0.1) 30%,
+    rgba(0, 240, 255, 0.2) 40%,
+    rgba(0, 240, 255, 0.1) 50%,
+    transparent 100%
+  );
+  transform: rotate(45deg);
+  animation: holographic-shine 3s linear infinite;
+}
+
+@keyframes holographic-shine {
+  0% {
+    top: -200%;
+    left: -200%;
+  }
+  100% {
+    top: 200%;
+    left: 200%;
+  }
+}
+
+.dark {
+  --sidebar: hsl(240 5.9% 10%);
+  --sidebar-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-primary: hsl(224.3 76.3% 48%);
+  --sidebar-primary-foreground: hsl(0 0% 100%);
+  --sidebar-accent: hsl(240 3.7% 15.9%);
+  --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
+  --sidebar-border: hsl(240 3.7% 15.9%);
+  --sidebar-ring: hsl(217.2 91.2% 59.8%);
+}
