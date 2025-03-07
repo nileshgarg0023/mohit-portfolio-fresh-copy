@@ -10,12 +10,9 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // If there's no session and the user is trying to access the admin route
+  // Protect admin routes
   if (!session && req.nextUrl.pathname.startsWith('/admin')) {
-    const redirectUrl = req.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    redirectUrl.searchParams.set('redirectedFrom', req.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return res;

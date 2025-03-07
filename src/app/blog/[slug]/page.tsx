@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import type { Blog } from '@/lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 
-export default function BlogPost({ params }: { params: { slug: string } }) {
+export default function BlogPost() {
+  const params = useParams();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchBlog();
-  }, []);
-
-  const fetchBlog = async () => {
+  const fetchBlog = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('blogs')
@@ -22,27 +22,45 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
         .eq('slug', params.slug)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching blog:', error);
+        setError('Failed to load blog post');
+        return;
+      }
+
       setBlog(data);
     } catch (error) {
-      console.error('Error fetching blog:', error);
+      console.error('Error:', error);
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.slug]);
+
+  useEffect(() => {
+    fetchBlog();
+  }, [fetchBlog]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-cyan-400 animate-pulse font-mono">Loading post...</div>
+      <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-cyan-400 flex items-center justify-center">
+        <div className="text-xl animate-pulse">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-red-400 flex items-center justify-center">
+        <div className="text-xl">{error}</div>
       </div>
     );
   }
 
   if (!blog) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-400 font-mono">Post not found</div>
+      <div className="min-h-screen bg-gradient-to-b from-black via-gray-900 to-black text-cyan-400 flex items-center justify-center">
+        <div className="text-xl">Blog post not found</div>
       </div>
     );
   }
@@ -85,14 +103,13 @@ export default function BlogPost({ params }: { params: { slug: string } }) {
           {/* Blog header */}
           <div className="relative rounded-xl overflow-hidden mb-8">
             {blog.image_url && (
-              <div className="relative h-[400px]">
-                <img
-                  src={blog.image_url}
-                  alt={blog.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
-              </div>
+              <Image 
+                src={blog.image_url} 
+                alt={blog.title}
+                width={1200}
+                height={600}
+                className="w-full h-96 object-cover rounded-lg border border-cyan-400/30"
+              />
             )}
             
             <div className={`${blog.image_url ? 'absolute bottom-0 left-0 right-0' : ''} p-8`}>

@@ -5,11 +5,13 @@ import { motion, AnimatePresence, useInView } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
 import type { Project } from '@/lib/supabase'
+import { toast } from 'sonner'
 
 export default function Projects() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, margin: "-100px" })
   
@@ -27,6 +29,9 @@ export default function Projects() {
 
   const fetchProjects = async () => {
     try {
+      setLoading(true)
+      setError(null)
+
       const { data, error } = await supabase
         .from('projects')
         .select('*')
@@ -34,17 +39,49 @@ export default function Projects() {
 
       if (error) {
         console.error('Error fetching projects:', error)
+        setError('Failed to load projects. Please try again later.')
+        toast.error('Failed to load projects')
         return
       }
 
-      console.log('Fetched projects:', data)
-      setProjects(data || [])
+      if (!data) {
+        setProjects([])
+        return
+      }
+
+      // Validate project data structure
+      const validProjects = data.filter(project => {
+        const isValid = project.id && 
+          project.title && 
+          project.description && 
+          project.tags && 
+          project.details && 
+          project.color
+        if (!isValid) {
+          console.warn('Invalid project data:', project)
+        }
+        return isValid
+      })
+
+      setProjects(validProjects)
     } catch (error) {
       console.error('Error:', error)
+      setError('An unexpected error occurred. Please try again later.')
+      toast.error('An unexpected error occurred')
     } finally {
       setLoading(false)
     }
   }
+
+  const handleProjectClick = (projectId: string) => {
+    setSelectedProject(projectId)
+  }
+
+  const handleCloseModal = () => {
+    setSelectedProject(null)
+  }
+
+  const selectedProjectData = projects.find(p => p.id === selectedProject)
   
   return (
     <section 
@@ -115,7 +152,20 @@ export default function Projects() {
           {/* Project grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {loading ? (
-              <div className="col-span-full text-center text-cyan-400">Loading projects...</div>
+              <div className="col-span-full text-center text-cyan-400">
+                <div className="animate-pulse">Loading projects...</div>
+              </div>
+            ) : error ? (
+              <div className="col-span-full text-center text-red-400">
+                <p>{error}</p>
+                <Button 
+                  variant="outline" 
+                  className="mt-4 border-cyan-500 text-cyan-500 hover:bg-cyan-950"
+                  onClick={fetchProjects}
+                >
+                  Retry
+                </Button>
+              </div>
             ) : projects.length === 0 ? (
               <div className="col-span-full text-center text-cyan-400">No projects found.</div>
             ) : (
@@ -126,7 +176,7 @@ export default function Projects() {
                   animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
                   transition={{ duration: 0.6, delay: 0.1 * index }}
                   className="relative group"
-                  onClick={() => setSelectedProject(project.id)}
+                  onClick={() => handleProjectClick(project.id)}
                 >
                   {/* Glowing border */}
                   <div className="absolute -inset-0.5 rounded-xl opacity-75 blur-sm border-glow bg-gradient-to-br from-cyan-500/30 to-purple-600/30 group-hover:opacity-100 transition-opacity"></div>
@@ -180,7 +230,7 @@ export default function Projects() {
                           className="w-full border-cyan-500 text-cyan-500 hover:bg-cyan-950 font-mono text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            setSelectedProject(project.id);
+                            handleProjectClick(project.id);
                           }}
                         >
                           $ ./view_details.sh
@@ -198,13 +248,13 @@ export default function Projects() {
           
           {/* Project details modal */}
           <AnimatePresence>
-            {selectedProject && (
+            {selectedProject && selectedProjectData && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
-                onClick={() => setSelectedProject(null)}
+                onClick={handleCloseModal}
               >
                 <motion.div
                   initial={{ scale: 0.9, y: 20 }}
@@ -231,7 +281,7 @@ export default function Projects() {
                       </div>
                       <button 
                         className="text-gray-400 hover:text-white"
-                        onClick={() => setSelectedProject(null)}
+                        onClick={handleCloseModal}
                       >
                         <span className="sr-only">Close</span>
                         <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -241,35 +291,33 @@ export default function Projects() {
                     </div>
 
                     {/* Project details */}
-                    {projects.find(p => p.id === selectedProject) && (
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-2">Challenge</h3>
-                          <p className="text-gray-300 font-mono">{projects.find(p => p.id === selectedProject)?.details.challenge}</p>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-2">Solution</h3>
-                          <p className="text-gray-300 font-mono">{projects.find(p => p.id === selectedProject)?.details.solution}</p>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-2">Technologies</h3>
-                          <div className="flex flex-wrap gap-2">
-                            {projects.find(p => p.id === selectedProject)?.details.technologies.map((tech, i) => (
-                              <span 
-                                key={i}
-                                className="px-2 py-1 bg-cyan-900/20 border border-cyan-800/50 rounded-full text-cyan-400 text-xs font-mono"
-                              >
-                                {tech}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-bold text-white mb-2">Outcome</h3>
-                          <p className="text-gray-300 font-mono">{projects.find(p => p.id === selectedProject)?.details.outcome}</p>
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-2">Challenge</h3>
+                        <p className="text-gray-300 font-mono">{selectedProjectData.details.challenge}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-2">Solution</h3>
+                        <p className="text-gray-300 font-mono">{selectedProjectData.details.solution}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-2">Technologies</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProjectData.details.technologies.map((tech, i) => (
+                            <span 
+                              key={i}
+                              className="px-2 py-1 bg-cyan-900/20 border border-cyan-800/50 rounded-full text-cyan-400 text-xs font-mono"
+                            >
+                              {tech}
+                            </span>
+                          ))}
                         </div>
                       </div>
-                    )}
+                      <div>
+                        <h3 className="text-xl font-bold text-white mb-2">Outcome</h3>
+                        <p className="text-gray-300 font-mono">{selectedProjectData.details.outcome}</p>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </motion.div>

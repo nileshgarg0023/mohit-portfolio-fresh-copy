@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 
 interface Toast {
   id: string
@@ -18,6 +18,9 @@ interface ToastContextType {
 
 const ToastContext = React.createContext<ToastContextType | undefined>(undefined)
 
+// Create a ref to store the context
+let toastContextRef: ToastContextType | undefined
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -30,8 +33,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }
 
+  const contextValue = useMemo(() => ({
+    toasts,
+    addToast,
+    removeToast
+  }), [toasts])
+
+  // Update the ref when context changes
+  useEffect(() => {
+    toastContextRef = contextValue
+  }, [contextValue])
+
   return (
-    <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div className="fixed bottom-0 right-0 p-4 space-y-4 z-50">
         {toasts.map((toast) => (
@@ -73,10 +87,10 @@ export function useToast() {
   return context
 }
 
+// Create a function to add toasts that doesn't use hooks
 export const toast = (toast: Omit<Toast, "id">) => {
-  const context = React.useContext(ToastContext)
-  if (context === undefined) {
+  if (toastContextRef === undefined) {
     throw new Error("toast must be used within a ToastProvider")
   }
-  context.addToast(toast)
+  toastContextRef.addToast(toast)
 } 

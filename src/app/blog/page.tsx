@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import type { Blog } from '@/lib/supabase';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function BlogPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
@@ -127,14 +128,13 @@ export default function BlogPage() {
                 <div className="relative bg-black/80 backdrop-blur-sm rounded-xl border border-cyan-400/30 overflow-hidden">
                   {/* Blog image */}
                   {blog.image_url && (
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={blog.image_url}
-                        alt={blog.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-                    </div>
+                    <Image 
+                      src={blog.image_url} 
+                      alt={blog.title}
+                      width={800}
+                      height={400}
+                      className="w-full h-48 object-cover rounded-md border border-cyan-400/30"
+                    />
                   )}
                   
                   {/* Content */}

@@ -28,8 +28,102 @@ import {
 import type { Profile, Project, Experience, Skill, Contact, Blog } from '@/lib/supabase';
 import ContactsTable from '@/components/admin/contacts-table'
 import { toast } from "sonner";
+import Image from 'next/image';
 
-type ContentType = 'project' | 'experience' | 'skill' | 'blog' | 'profile'
+type ContentType = 'project' | 'experience' | 'skill' | 'blog' | 'profile' | 'contact';
+
+type ContentItem = Project | Experience | Skill | Blog | Profile | Contact;
+
+type ContentItemWithType = ContentItem & {
+  type?: string;
+};
+
+type FormData = {
+  title: string;
+  description: string;
+  tags: string | string[];
+  details: {
+    challenge: string;
+    solution: string;
+    technologies: string[];
+    outcome: string;
+  };
+  color: string;
+  image_url?: string;
+  github_url?: string;
+  live_url?: string;
+  company?: string;
+  position?: string;
+  start_date?: string;
+  end_date?: string | null;
+  current?: boolean;
+  mission?: string;
+  achievements: string | string[];
+  name?: string;
+  category?: string;
+  level?: number;
+  icon?: string;
+  content?: string;
+  published?: boolean;
+  slug?: string;
+  excerpt?: string;
+  years_of_experience?: string;
+  companies?: string;
+  core_competencies: string | string[];
+  specialized_skills: string | string[];
+  approach_text?: string;
+  security_audits_count?: string;
+  vulnerabilities_count?: string;
+  architectures_count?: string;
+  certifications_count?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  technologies: string | string[];
+  type?: string;
+};
+
+type ExperienceFormData = {
+  company: string;
+  position: string;
+  start_date: string;
+  end_date?: string;
+  current: boolean;
+  mission: string;
+  achievements: string[];
+};
+
+type ProjectFormData = {
+  title: string;
+  description: string;
+  image_url?: string;
+  github_url?: string;
+  live_url?: string;
+  tags: string[];
+  details: {
+    challenge: string;
+    solution: string;
+    technologies: string[];
+    outcome: string;
+  };
+  color: string;
+};
+
+type SkillFormData = {
+  name: string;
+  category: string;
+  level: number;
+  icon: string;
+};
+
+type BlogFormData = {
+  title: string;
+  content: string;
+  image_url?: string;
+  published: boolean;
+  slug: string;
+  excerpt?: string;
+  tags?: string[];
+};
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
@@ -44,15 +138,15 @@ export default function AdminPage() {
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'project' | 'experience' | 'skill' | 'blog' | 'profile'>('project');
-  const [editingItem, setEditingItem] = useState<any>(null);
+  const [editingItem, setEditingItem] = useState<ContentItemWithType | null>(null);
   
   // Delete confirmation states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [itemToDelete, setItemToDelete] = useState<ContentItemWithType | null>(null);
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   const [selectedContentType, setSelectedContentType] = useState<ContentType>('experience');
-  const [selectedContent, setSelectedContent] = useState<any>(null);
+  const [selectedContent, setSelectedContent] = useState<ContentItemWithType | null>(null);
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -201,45 +295,45 @@ export default function AdminPage() {
     setDialogOpen(true);
   };
 
-  const handleContentSubmit = async (data: any) => {
+  const handleContentSubmit = async (data: FormData) => {
     try {
       setLoading(true);
       let table = '';
-      let formattedData = { ...data };
+      const formattedData = { ...data };
       
       switch (dialogType) {
         case 'profile':
           table = 'profile';
           // Convert comma-separated strings to arrays
-          formattedData.core_competencies = data.core_competencies.split(',').map((item: string) => item.trim()).filter(Boolean);
-          formattedData.specialized_skills = data.specialized_skills.split(',').map((item: string) => item.trim()).filter(Boolean);
-          
-          if (profile?.id) {
-            const { error } = await supabase
-              .from(table)
-              .update({
-                ...formattedData,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', profile.id);
-            if (error) throw error;
-          } else {
-            const { error } = await supabase
-              .from(table)
-              .insert([{
-                ...formattedData,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              }]);
-            if (error) throw error;
-          }
+          formattedData.core_competencies = Array.isArray(data.core_competencies) 
+            ? data.core_competencies 
+            : typeof data.core_competencies === 'string'
+              ? data.core_competencies.split(',').map(item => item.trim()).filter(Boolean)
+              : [];
+          formattedData.specialized_skills = Array.isArray(data.specialized_skills)
+            ? data.specialized_skills
+            : typeof data.specialized_skills === 'string'
+              ? data.specialized_skills.split(',').map(item => item.trim()).filter(Boolean)
+              : [];
           break;
 
         case 'project':
           table = 'projects';
           // Convert technologies to array if it's a string
-          if (typeof data.technologies === 'string') {
-            formattedData.technologies = data.technologies.split(',').map((tech: string) => tech.trim()).filter(Boolean);
+          if (data.technologies) {
+            formattedData.technologies = Array.isArray(data.technologies)
+              ? data.technologies
+              : typeof data.technologies === 'string'
+                ? data.technologies.split(',').map(tech => tech.trim()).filter(Boolean)
+                : [];
+          }
+          // Convert tags to array if it's a string
+          if (data.tags) {
+            formattedData.tags = Array.isArray(data.tags)
+              ? data.tags
+              : typeof data.tags === 'string'
+                ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+                : [];
           }
           break;
 
@@ -250,19 +344,12 @@ export default function AdminPage() {
             formattedData.end_date = null;
           }
           // Ensure achievements is an array
-          if (typeof data.achievements === 'string') {
-            formattedData.achievements = data.achievements.split('\n').map((achievement: string) => achievement.trim()).filter(Boolean);
-          } else if (!Array.isArray(data.achievements)) {
-            formattedData.achievements = [];
-          }
-          // Ensure mission is a string
-          formattedData.mission = formattedData.mission || '';
-          // Ensure dates are in the correct format
-          if (formattedData.start_date) {
-            formattedData.start_date = new Date(formattedData.start_date).toISOString();
-          }
-          if (formattedData.end_date && !formattedData.current) {
-            formattedData.end_date = new Date(formattedData.end_date).toISOString();
+          if (data.achievements) {
+            formattedData.achievements = Array.isArray(data.achievements)
+              ? data.achievements
+              : typeof data.achievements === 'string'
+                ? data.achievements.split('\n').map((achievement: string) => achievement.trim()).filter(Boolean)
+                : [];
           }
           break;
 
@@ -282,10 +369,6 @@ export default function AdminPage() {
 
         case 'blog':
           table = 'blogs';
-          // Convert tags to array if it's a string
-          if (typeof data.tags === 'string') {
-            formattedData.tags = data.tags.split(',').map((tag: string) => tag.trim()).filter(Boolean);
-          }
           // Generate slug if not provided
           if (!data.slug) {
             formattedData.slug = data.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -337,14 +420,13 @@ export default function AdminPage() {
     setDialogOpen(true);
   };
 
-  const handleEdit = (item: any, type: 'project' | 'experience' | 'skill' | 'blog') => {
+  const handleEdit = (item: ContentItem, type: 'project' | 'experience' | 'skill' | 'blog') => {
     setDialogType(type);
     setEditingItem(item);
     setDialogOpen(true);
   };
 
-  const handleDelete = (item: any) => {
-    // Determine the table name based on item properties
+  const handleDelete = (item: ContentItemWithType) => {
     const type = 
       item.type || // Use the type if it's already set
       ('company' in item ? 'experiences' :
@@ -390,70 +472,46 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddExperience = async (data: any) => {
+  const handleAddExperience = async (formData: ExperienceFormData) => {
     try {
-      console.log('Adding experience:', data);
+      console.log('Adding experience:', formData);
       const { error } = await supabase
         .from('experiences')
-        .insert([data]);
+        .insert([formData]);
 
       if (error) {
         console.error('Error adding experience:', error);
-        toast.error("Failed to add experience");
+        toast.error('Failed to add experience');
         return;
       }
 
-      // Refresh experiences list
-      const { data: experiences, error: fetchError } = await supabase
-        .from('experiences')
-        .select('*')
-        .order('start_date', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching experiences:', fetchError);
-        toast.error("Failed to refresh experiences list");
-        return;
-      }
-
-      setExperiences(experiences);
-      toast.success("Experience added successfully");
+      toast.success('Experience added successfully');
+      fetchExperiences();
     } catch (error) {
-      console.error('Error in handleAddExperience:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
-  const handleUpdateExperience = async (data: any) => {
+  const handleUpdateExperience = async (id: string, formData: ExperienceFormData) => {
     try {
-      console.log('Updating experience:', data);
+      console.log('Updating experience:', id, formData);
       const { error } = await supabase
         .from('experiences')
-        .update(data)
-        .eq('id', data.id);
+        .update(formData)
+        .eq('id', id);
 
       if (error) {
         console.error('Error updating experience:', error);
-        toast.error("Failed to update experience");
+        toast.error('Failed to update experience');
         return;
       }
 
-      // Refresh experiences list
-      const { data: experiences, error: fetchError } = await supabase
-        .from('experiences')
-        .select('*')
-        .order('start_date', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching experiences:', fetchError);
-        toast.error("Failed to refresh experiences list");
-        return;
-      }
-
-      setExperiences(experiences);
-      toast.success("Experience updated successfully");
+      toast.success('Experience updated successfully');
+      fetchExperiences();
     } catch (error) {
-      console.error('Error in handleUpdateExperience:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
@@ -467,264 +525,278 @@ export default function AdminPage() {
 
       if (error) {
         console.error('Error deleting experience:', error);
-        toast.error("Failed to delete experience");
+        toast.error('Failed to delete experience');
         return;
       }
 
-      // Refresh experiences list
-      const { data: experiences, error: fetchError } = await supabase
+      toast.success('Experience deleted successfully');
+      fetchExperiences();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleAddProject = async (formData: ProjectFormData) => {
+    try {
+      console.log('Adding project:', formData);
+      const { error } = await supabase
+        .from('projects')
+        .insert([formData]);
+
+      if (error) {
+        console.error('Error adding project:', error);
+        toast.error('Failed to add project');
+        return;
+      }
+
+      toast.success('Project added successfully');
+      fetchProjects();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleUpdateProject = async (id: string, formData: ProjectFormData) => {
+    try {
+      console.log('Updating project:', id, formData);
+      const { error } = await supabase
+        .from('projects')
+        .update(formData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating project:', error);
+        toast.error('Failed to update project');
+        return;
+      }
+
+      toast.success('Project updated successfully');
+      fetchProjects();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleAddSkill = async (formData: SkillFormData) => {
+    try {
+      console.log('Adding skill:', formData);
+      const { error } = await supabase
+        .from('skills')
+        .insert([formData]);
+
+      if (error) {
+        console.error('Error adding skill:', error);
+        toast.error('Failed to add skill');
+        return;
+      }
+
+      toast.success('Skill added successfully');
+      fetchSkills();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleUpdateSkill = async (id: string, formData: SkillFormData) => {
+    try {
+      console.log('Updating skill:', id, formData);
+      const { error } = await supabase
+        .from('skills')
+        .update(formData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating skill:', error);
+        toast.error('Failed to update skill');
+        return;
+      }
+
+      toast.success('Skill updated successfully');
+      fetchSkills();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleAddBlog = async (formData: BlogFormData) => {
+    try {
+      console.log('Adding blog:', formData);
+      const { error } = await supabase
+        .from('blogs')
+        .insert([formData]);
+
+      if (error) {
+        console.error('Error adding blog:', error);
+        toast.error('Failed to add blog');
+        return;
+      }
+
+      toast.success('Blog added successfully');
+      fetchBlogs();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleUpdateBlog = async (id: string, formData: BlogFormData) => {
+    try {
+      console.log('Updating blog:', id, formData);
+      const { error } = await supabase
+        .from('blogs')
+        .update(formData)
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error updating blog:', error);
+        toast.error('Failed to update blog');
+        return;
+      }
+
+      toast.success('Blog updated successfully');
+      fetchBlogs();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  const handleProfileUpdate = async (formData: Profile) => {
+    try {
+      console.log('Updating profile:', formData);
+      const { error } = await supabase
+        .from('profiles')
+        .update(formData)
+        .eq('id', formData.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast.error('Failed to update profile');
+        return;
+      }
+
+      toast.success('Profile updated successfully');
+      fetchProfile();
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+    }
+  };
+
+  // Add fetch functions
+  const fetchExperiences = async () => {
+    try {
+      const { data, error } = await supabase
         .from('experiences')
         .select('*')
         .order('start_date', { ascending: false });
 
-      if (fetchError) {
-        console.error('Error fetching experiences:', fetchError);
-        toast.error("Failed to refresh experiences list");
+      if (error) {
+        console.error('Error fetching experiences:', error);
+        toast.error('Failed to fetch experiences');
         return;
       }
 
-      setExperiences(experiences);
-      toast.success("Experience deleted successfully");
+      setExperiences(data || []);
     } catch (error) {
-      console.error('Error in handleDeleteExperience:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
-  const handleAddProject = async (data: any) => {
+  const fetchProjects = async () => {
     try {
-      console.log('Adding project:', data);
-      const { error } = await supabase
-        .from('projects')
-        .insert([data]);
-
-      if (error) {
-        console.error('Error adding project:', error);
-        toast.error("Failed to add project");
-        return;
-      }
-
-      // Refresh projects list
-      const { data: projects, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('projects')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        console.error('Error fetching projects:', fetchError);
-        toast.error("Failed to refresh projects list");
+      if (error) {
+        console.error('Error fetching projects:', error);
+        toast.error('Failed to fetch projects');
         return;
       }
 
-      setProjects(projects);
-      toast.success("Project added successfully");
+      setProjects(data || []);
     } catch (error) {
-      console.error('Error in handleAddProject:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
-  const handleUpdateProject = async (data: any) => {
+  const fetchSkills = async () => {
     try {
-      console.log('Updating project:', data);
-      const { error } = await supabase
-        .from('projects')
-        .update(data)
-        .eq('id', data.id);
-
-      if (error) {
-        console.error('Error updating project:', error);
-        toast.error("Failed to update project");
-        return;
-      }
-
-      // Refresh projects list
-      const { data: projects, error: fetchError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching projects:', fetchError);
-        toast.error("Failed to refresh projects list");
-        return;
-      }
-
-      setProjects(projects);
-      toast.success("Project updated successfully");
-    } catch (error) {
-      console.error('Error in handleUpdateProject:', error);
-      toast.error("An unexpected error occurred");
-    }
-  };
-
-  const handleAddSkill = async (data: any) => {
-    try {
-      console.log('Adding skill:', data);
-      const { error } = await supabase
-        .from('skills')
-        .insert([data]);
-
-      if (error) {
-        console.error('Error adding skill:', error);
-        toast.error("Failed to add skill");
-        return;
-      }
-
-      // Refresh skills list
-      const { data: skills, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('skills')
         .select('*')
         .order('category', { ascending: true });
 
-      if (fetchError) {
-        console.error('Error fetching skills:', fetchError);
-        toast.error("Failed to refresh skills list");
+      if (error) {
+        console.error('Error fetching skills:', error);
+        toast.error('Failed to fetch skills');
         return;
       }
 
-      setSkills(skills);
-      toast.success("Skill added successfully");
+      setSkills(data || []);
     } catch (error) {
-      console.error('Error in handleAddSkill:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
-  const handleUpdateSkill = async (data: any) => {
+  const fetchBlogs = async () => {
     try {
-      console.log('Updating skill:', data);
-      const { error } = await supabase
-        .from('skills')
-        .update(data)
-        .eq('id', data.id);
-
-      if (error) {
-        console.error('Error updating skill:', error);
-        toast.error("Failed to update skill");
-        return;
-      }
-
-      // Refresh skills list
-      const { data: skills, error: fetchError } = await supabase
-        .from('skills')
-        .select('*')
-        .order('category', { ascending: true });
-
-      if (fetchError) {
-        console.error('Error fetching skills:', fetchError);
-        toast.error("Failed to refresh skills list");
-        return;
-      }
-
-      setSkills(skills);
-      toast.success("Skill updated successfully");
-    } catch (error) {
-      console.error('Error in handleUpdateSkill:', error);
-      toast.error("An unexpected error occurred");
-    }
-  };
-
-  const handleAddBlog = async (data: any) => {
-    try {
-      console.log('Adding blog:', data);
-      const { error } = await supabase
-        .from('blogs')
-        .insert([data]);
-
-      if (error) {
-        console.error('Error adding blog:', error);
-        toast.error("Failed to add blog");
-        return;
-      }
-
-      // Refresh blogs list
-      const { data: blogs, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from('blogs')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (fetchError) {
-        console.error('Error fetching blogs:', fetchError);
-        toast.error("Failed to refresh blogs list");
+      if (error) {
+        console.error('Error fetching blogs:', error);
+        toast.error('Failed to fetch blogs');
         return;
       }
 
-      setBlogs(blogs);
-      toast.success("Blog added successfully");
+      setBlogs(data || []);
     } catch (error) {
-      console.error('Error in handleAddBlog:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
 
-  const handleUpdateBlog = async (data: any) => {
+  const fetchProfile = async () => {
     try {
-      console.log('Updating blog:', data);
-      const { error } = await supabase
-        .from('blogs')
-        .update(data)
-        .eq('id', data.id);
-
-      if (error) {
-        console.error('Error updating blog:', error);
-        toast.error("Failed to update blog");
-        return;
-      }
-
-      // Refresh blogs list
-      const { data: blogs, error: fetchError } = await supabase
-        .from('blogs')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        console.error('Error fetching blogs:', fetchError);
-        toast.error("Failed to refresh blogs list");
-        return;
-      }
-
-      setBlogs(blogs);
-      toast.success("Blog updated successfully");
-    } catch (error) {
-      console.error('Error in handleUpdateBlog:', error);
-      toast.error("An unexpected error occurred");
-    }
-  };
-
-  const handleProfileUpdate = async (data: any) => {
-    try {
-      console.log('Updating profile:', data);
-      const { error } = await supabase
-        .from('profile')
-        .update(data)
-        .eq('id', profile?.id);
-
-      if (error) {
-        console.error('Error updating profile:', error);
-        toast.error("Failed to update profile");
-        return;
-      }
-
-      // Refresh profile data
-      const { data: profileData, error: fetchError } = await supabase
-        .from('profile')
+      const { data, error } = await supabase
+        .from('profiles')
         .select('*')
         .single();
 
-      if (fetchError) {
-        console.error('Error fetching profile:', fetchError);
-        toast.error("Failed to refresh profile data");
+      if (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Failed to fetch profile');
         return;
       }
 
-      setProfile(profileData);
-      toast.success("Profile updated successfully");
+      setProfile(data);
     } catch (error) {
-      console.error('Error in handleProfileUpdate:', error);
-      toast.error("An unexpected error occurred");
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
     }
   };
+
+  // Add useEffect to fetch initial data
+  useEffect(() => {
+    fetchExperiences();
+    fetchProjects();
+    fetchSkills();
+    fetchBlogs();
+    fetchProfile();
+  }, []);
 
   if (loading) {
     return (
@@ -830,9 +902,11 @@ export default function AdminPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {project.image_url && (
-                      <img 
+                      <Image 
                         src={project.image_url} 
                         alt={project.title}
+                        width={800}
+                        height={400}
                         className="w-full h-48 object-cover rounded-md border border-cyan-400/30"
                       />
                     )}
@@ -1063,9 +1137,11 @@ export default function AdminPage() {
                   <CardContent>
                     <p className="text-cyan-400/70 line-clamp-3">{blog.content}</p>
                     {blog.image_url && (
-                      <img 
+                      <Image 
                         src={blog.image_url} 
                         alt={blog.title}
+                        width={800}
+                        height={400}
                         className="mt-4 w-full h-48 object-cover rounded-md border border-cyan-400/30"
                       />
                     )}
@@ -1141,34 +1217,34 @@ export default function AdminPage() {
             switch (selectedContentType) {
               case 'experience':
                 if (selectedContent) {
-                  await handleUpdateExperience({ ...data, id: selectedContent.id });
+                  await handleUpdateExperience(selectedContent.id, data as ExperienceFormData);
                 } else {
-                  await handleAddExperience(data);
+                  await handleAddExperience(data as ExperienceFormData);
                 }
                 break;
               case 'project':
                 if (selectedContent) {
-                  await handleUpdateProject({ ...data, id: selectedContent.id });
+                  await handleUpdateProject(selectedContent.id, data as ProjectFormData);
                 } else {
-                  await handleAddProject(data);
+                  await handleAddProject(data as ProjectFormData);
                 }
                 break;
               case 'skill':
                 if (selectedContent) {
-                  await handleUpdateSkill({ ...data, id: selectedContent.id });
+                  await handleUpdateSkill(selectedContent.id, data as SkillFormData);
                 } else {
-                  await handleAddSkill(data);
+                  await handleAddSkill(data as SkillFormData);
                 }
                 break;
               case 'blog':
                 if (selectedContent) {
-                  await handleUpdateBlog({ ...data, id: selectedContent.id });
+                  await handleUpdateBlog(selectedContent.id, data as BlogFormData);
                 } else {
-                  await handleAddBlog(data);
+                  await handleAddBlog(data as BlogFormData);
                 }
                 break;
               case 'profile':
-                await handleProfileUpdate(data);
+                await handleProfileUpdate(data as Profile);
                 break;
               default:
                 throw new Error('Invalid content type');
