@@ -29,6 +29,9 @@ export interface Project {
   title: string;
   description: string;
   image?: string;
+  image_url?: string;
+  github_url?: string;
+  live_url?: string;
   tags: string[];
   details: {
     challenge: string;
@@ -68,8 +71,11 @@ export interface Contact {
   id: string;
   name: string;
   email: string;
+  subject: string;
   message: string;
+  status: 'unread' | 'read' | 'replied';
   created_at: string;
+  updated_at: string;
 }
 
 export interface Blog {

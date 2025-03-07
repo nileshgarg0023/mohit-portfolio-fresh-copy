@@ -26,6 +26,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { Profile, Project, Experience, Skill, Contact, Blog } from '@/lib/supabase';
+import ContactsTable from '@/components/admin/contacts-table'
+import { toast } from "sonner";
+
+type ContentType = 'project' | 'experience' | 'skill' | 'blog' | 'profile'
 
 export default function AdminPage() {
   const [loading, setLoading] = useState(true);
@@ -46,6 +50,10 @@ export default function AdminPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<any>(null);
   const [updateMessage, setUpdateMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+  const [selectedContentType, setSelectedContentType] = useState<ContentType>('experience');
+  const [selectedContent, setSelectedContent] = useState<any>(null);
+  const [contentDialogOpen, setContentDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -338,11 +346,12 @@ export default function AdminPage() {
   const handleDelete = (item: any) => {
     // Determine the table name based on item properties
     const type = 
-      'company' in item ? 'experiences' :
-      'proficiency' in item ? 'skills' :
+      item.type || // Use the type if it's already set
+      ('company' in item ? 'experiences' :
+      'level' in item ? 'skills' :
       'technologies' in item ? 'projects' :
       'slug' in item ? 'blogs' :
-      'message' in item ? 'contacts' : '';
+      'message' in item ? 'contacts' : '');
 
     if (!type) {
       console.error('Unknown item type:', item);
@@ -381,6 +390,342 @@ export default function AdminPage() {
     }
   };
 
+  const handleAddExperience = async (data: any) => {
+    try {
+      console.log('Adding experience:', data);
+      const { error } = await supabase
+        .from('experiences')
+        .insert([data]);
+
+      if (error) {
+        console.error('Error adding experience:', error);
+        toast.error("Failed to add experience");
+        return;
+      }
+
+      // Refresh experiences list
+      const { data: experiences, error: fetchError } = await supabase
+        .from('experiences')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching experiences:', fetchError);
+        toast.error("Failed to refresh experiences list");
+        return;
+      }
+
+      setExperiences(experiences);
+      toast.success("Experience added successfully");
+    } catch (error) {
+      console.error('Error in handleAddExperience:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleUpdateExperience = async (data: any) => {
+    try {
+      console.log('Updating experience:', data);
+      const { error } = await supabase
+        .from('experiences')
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) {
+        console.error('Error updating experience:', error);
+        toast.error("Failed to update experience");
+        return;
+      }
+
+      // Refresh experiences list
+      const { data: experiences, error: fetchError } = await supabase
+        .from('experiences')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching experiences:', fetchError);
+        toast.error("Failed to refresh experiences list");
+        return;
+      }
+
+      setExperiences(experiences);
+      toast.success("Experience updated successfully");
+    } catch (error) {
+      console.error('Error in handleUpdateExperience:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleDeleteExperience = async (id: string) => {
+    try {
+      console.log('Deleting experience:', id);
+      const { error } = await supabase
+        .from('experiences')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Error deleting experience:', error);
+        toast.error("Failed to delete experience");
+        return;
+      }
+
+      // Refresh experiences list
+      const { data: experiences, error: fetchError } = await supabase
+        .from('experiences')
+        .select('*')
+        .order('start_date', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching experiences:', fetchError);
+        toast.error("Failed to refresh experiences list");
+        return;
+      }
+
+      setExperiences(experiences);
+      toast.success("Experience deleted successfully");
+    } catch (error) {
+      console.error('Error in handleDeleteExperience:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleAddProject = async (data: any) => {
+    try {
+      console.log('Adding project:', data);
+      const { error } = await supabase
+        .from('projects')
+        .insert([data]);
+
+      if (error) {
+        console.error('Error adding project:', error);
+        toast.error("Failed to add project");
+        return;
+      }
+
+      // Refresh projects list
+      const { data: projects, error: fetchError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching projects:', fetchError);
+        toast.error("Failed to refresh projects list");
+        return;
+      }
+
+      setProjects(projects);
+      toast.success("Project added successfully");
+    } catch (error) {
+      console.error('Error in handleAddProject:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleUpdateProject = async (data: any) => {
+    try {
+      console.log('Updating project:', data);
+      const { error } = await supabase
+        .from('projects')
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) {
+        console.error('Error updating project:', error);
+        toast.error("Failed to update project");
+        return;
+      }
+
+      // Refresh projects list
+      const { data: projects, error: fetchError } = await supabase
+        .from('projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching projects:', fetchError);
+        toast.error("Failed to refresh projects list");
+        return;
+      }
+
+      setProjects(projects);
+      toast.success("Project updated successfully");
+    } catch (error) {
+      console.error('Error in handleUpdateProject:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleAddSkill = async (data: any) => {
+    try {
+      console.log('Adding skill:', data);
+      const { error } = await supabase
+        .from('skills')
+        .insert([data]);
+
+      if (error) {
+        console.error('Error adding skill:', error);
+        toast.error("Failed to add skill");
+        return;
+      }
+
+      // Refresh skills list
+      const { data: skills, error: fetchError } = await supabase
+        .from('skills')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (fetchError) {
+        console.error('Error fetching skills:', fetchError);
+        toast.error("Failed to refresh skills list");
+        return;
+      }
+
+      setSkills(skills);
+      toast.success("Skill added successfully");
+    } catch (error) {
+      console.error('Error in handleAddSkill:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleUpdateSkill = async (data: any) => {
+    try {
+      console.log('Updating skill:', data);
+      const { error } = await supabase
+        .from('skills')
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) {
+        console.error('Error updating skill:', error);
+        toast.error("Failed to update skill");
+        return;
+      }
+
+      // Refresh skills list
+      const { data: skills, error: fetchError } = await supabase
+        .from('skills')
+        .select('*')
+        .order('category', { ascending: true });
+
+      if (fetchError) {
+        console.error('Error fetching skills:', fetchError);
+        toast.error("Failed to refresh skills list");
+        return;
+      }
+
+      setSkills(skills);
+      toast.success("Skill updated successfully");
+    } catch (error) {
+      console.error('Error in handleUpdateSkill:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleAddBlog = async (data: any) => {
+    try {
+      console.log('Adding blog:', data);
+      const { error } = await supabase
+        .from('blogs')
+        .insert([data]);
+
+      if (error) {
+        console.error('Error adding blog:', error);
+        toast.error("Failed to add blog");
+        return;
+      }
+
+      // Refresh blogs list
+      const { data: blogs, error: fetchError } = await supabase
+        .from('blogs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching blogs:', fetchError);
+        toast.error("Failed to refresh blogs list");
+        return;
+      }
+
+      setBlogs(blogs);
+      toast.success("Blog added successfully");
+    } catch (error) {
+      console.error('Error in handleAddBlog:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleUpdateBlog = async (data: any) => {
+    try {
+      console.log('Updating blog:', data);
+      const { error } = await supabase
+        .from('blogs')
+        .update(data)
+        .eq('id', data.id);
+
+      if (error) {
+        console.error('Error updating blog:', error);
+        toast.error("Failed to update blog");
+        return;
+      }
+
+      // Refresh blogs list
+      const { data: blogs, error: fetchError } = await supabase
+        .from('blogs')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        console.error('Error fetching blogs:', fetchError);
+        toast.error("Failed to refresh blogs list");
+        return;
+      }
+
+      setBlogs(blogs);
+      toast.success("Blog updated successfully");
+    } catch (error) {
+      console.error('Error in handleUpdateBlog:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
+  const handleProfileUpdate = async (data: any) => {
+    try {
+      console.log('Updating profile:', data);
+      const { error } = await supabase
+        .from('profile')
+        .update(data)
+        .eq('id', profile?.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        toast.error("Failed to update profile");
+        return;
+      }
+
+      // Refresh profile data
+      const { data: profileData, error: fetchError } = await supabase
+        .from('profile')
+        .select('*')
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching profile:', fetchError);
+        toast.error("Failed to refresh profile data");
+        return;
+      }
+
+      setProfile(profileData);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error('Error in handleProfileUpdate:', error);
+      toast.error("An unexpected error occurred");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-black via-gray-900 to-black text-cyan-400">
@@ -398,7 +743,7 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-8">
+    <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-cyan-400 mb-8">Admin Dashboard</h1>
 
       {updateMessage && (
@@ -466,7 +811,11 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Projects</h2>
               <Button 
-                onClick={() => handleAddNew('project')}
+                onClick={() => {
+                  setSelectedContentType('project')
+                  setSelectedContent(null)
+                  setContentDialogOpen(true)
+                }}
                 className="bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-400 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all"
               >
                 Add New Project
@@ -529,7 +878,11 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Work Experience</h2>
               <Button 
-                onClick={() => handleAddNew('experience')}
+                onClick={() => {
+                  setSelectedContentType('experience')
+                  setSelectedContent(null)
+                  setContentDialogOpen(true)
+                }}
                 className="bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-400 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all"
               >
                 Add New Experience
@@ -537,56 +890,73 @@ export default function AdminPage() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {experiences.map((experience) => (
-                <Card key={experience.id} className="bg-black/50 backdrop-blur-sm border-cyan-400/30 hover:border-cyan-400/50 transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.2)]">
-                  <CardHeader>
-                    <CardTitle className="text-cyan-400">{experience.position}</CardTitle>
-                    <CardDescription className="text-cyan-400/70">
-                      {experience.company}
-                      <span className="block text-sm mt-1">
-                        {new Date(experience.start_date).toLocaleDateString()} - {experience.current ? 'Present' : experience.end_date ? new Date(experience.end_date).toLocaleDateString() : ''}
-                      </span>
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <h3 className="text-cyan-400 font-medium mb-2">Mission</h3>
-                      <p className="text-cyan-400/70 whitespace-pre-wrap">{experience.mission}</p>
+                <div
+                  key={experience.id}
+                  className="bg-black/50 border border-cyan-500/30 rounded-lg p-6 relative group"
+                >
+                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-purple-600/30 rounded-lg blur opacity-30 group-hover:opacity-50 transition"></div>
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h3 className="text-xl font-bold text-cyan-400">{experience.position}</h3>
+                        <p className="text-cyan-400/70">{experience.company}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          onClick={() => {
+                            setSelectedContentType('experience')
+                            setSelectedContent(experience)
+                            setContentDialogOpen(true)
+                          }}
+                          className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteExperience(experience.id)}
+                          className="bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                        >
+                          Delete
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-cyan-400 font-medium mb-2">Achievements</h3>
-                      <ul className="list-none space-y-2">
-                        {Array.isArray(experience.achievements) && experience.achievements.length > 0 ? (
-                          experience.achievements.map((achievement, index) => (
-                            <li key={index} className="text-cyan-400/70 flex items-start">
-                              <span className="text-cyan-400 mr-2">→</span>
-                              {achievement}
-                            </li>
-                          ))
-                        ) : (
-                          <li className="text-cyan-400/50">No achievements listed</li>
-                        )}
-                      </ul>
+
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-sm text-cyan-400/70 mb-1">Duration</div>
+                        <p>
+                          {new Date(experience.start_date).toLocaleDateString('en-US', {
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                          {' - '}
+                          {experience.current ? (
+                            'Present'
+                          ) : experience.end_date ? (
+                            new Date(experience.end_date).toLocaleDateString('en-US', {
+                              month: 'long',
+                              year: 'numeric'
+                            })
+                          ) : ''}
+                        </p>
+                      </div>
+
+                      <div>
+                        <div className="text-sm text-cyan-400/70 mb-1">Mission</div>
+                        <p className="whitespace-pre-wrap">{experience.mission}</p>
+                      </div>
+
+                      <div>
+                        <div className="text-sm text-cyan-400/70 mb-1">Achievements</div>
+                        <ul className="list-disc list-inside space-y-1">
+                          {experience.achievements.map((achievement, index) => (
+                            <li key={index}>{achievement}</li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => handleEdit(experience, 'experience')}
-                      className="border-cyan-400/30 text-cyan-400 hover:bg-cyan-400/20 hover:shadow-[0_0_10px_rgba(0,255,255,0.2)]"
-                    >
-                      Edit
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={() => handleDelete({ ...experience, type: 'experiences' })}
-                      className="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 hover:shadow-[0_0_10px_rgba(255,0,0,0.2)]"
-                    >
-                      Delete
-                    </Button>
-                  </CardFooter>
-                </Card>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
@@ -597,7 +967,11 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Skills</h2>
               <Button 
-                onClick={() => handleAddNew('skill')}
+                onClick={() => {
+                  setSelectedContentType('skill')
+                  setSelectedContent(null)
+                  setContentDialogOpen(true)
+                }}
                 className="bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-400 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all"
               >
                 Add New Skill
@@ -667,7 +1041,11 @@ export default function AdminPage() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-semibold">Blog Posts</h2>
               <Button 
-                onClick={() => handleAddNew('blog')}
+                onClick={() => {
+                  setSelectedContentType('blog')
+                  setSelectedContent(null)
+                  setContentDialogOpen(true)
+                }}
                 className="bg-cyan-400/20 hover:bg-cyan-400/30 text-cyan-400 border border-cyan-400/30 hover:shadow-[0_0_15px_rgba(0,255,255,0.3)] transition-all"
               >
                 Add New Blog Post
@@ -754,11 +1132,54 @@ export default function AdminPage() {
       </Tabs>
 
       <ContentDialog
-        type={dialogType}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        onSubmit={handleContentSubmit}
-        initialData={editingItem}
+        type={selectedContentType}
+        open={contentDialogOpen}
+        onOpenChange={setContentDialogOpen}
+        initialData={selectedContent}
+        onSubmit={async (data) => {
+          try {
+            switch (selectedContentType) {
+              case 'experience':
+                if (selectedContent) {
+                  await handleUpdateExperience({ ...data, id: selectedContent.id });
+                } else {
+                  await handleAddExperience(data);
+                }
+                break;
+              case 'project':
+                if (selectedContent) {
+                  await handleUpdateProject({ ...data, id: selectedContent.id });
+                } else {
+                  await handleAddProject(data);
+                }
+                break;
+              case 'skill':
+                if (selectedContent) {
+                  await handleUpdateSkill({ ...data, id: selectedContent.id });
+                } else {
+                  await handleAddSkill(data);
+                }
+                break;
+              case 'blog':
+                if (selectedContent) {
+                  await handleUpdateBlog({ ...data, id: selectedContent.id });
+                } else {
+                  await handleAddBlog(data);
+                }
+                break;
+              case 'profile':
+                await handleProfileUpdate(data);
+                break;
+              default:
+                throw new Error('Invalid content type');
+            }
+            setContentDialogOpen(false);
+            fetchData(); // Refresh all data after any change
+          } catch (error) {
+            console.error('Error in onSubmit:', error);
+            toast.error(`Failed to ${selectedContent ? 'update' : 'add'} ${selectedContentType}`);
+          }
+        }}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -782,6 +1203,101 @@ export default function AdminPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Contacts Section */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold text-cyan-400 mb-4">Contact Messages</h2>
+        <ContactsTable />
+      </section>
+
+      {/* Experiences Section */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-cyan-400">Experiences</h2>
+          <Button
+            onClick={() => {
+              setSelectedContentType('experience')
+              setSelectedContent(null)
+              setContentDialogOpen(true)
+            }}
+            className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400"
+          >
+            Add Experience
+          </Button>
+        </div>
+
+        <div className="grid gap-4">
+          {experiences.map((experience) => (
+            <div
+              key={experience.id}
+              className="bg-black/50 border border-cyan-500/30 rounded-lg p-6 relative group"
+            >
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500/30 to-purple-600/30 rounded-lg blur opacity-30 group-hover:opacity-50 transition"></div>
+              <div className="relative">
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h3 className="text-xl font-bold text-cyan-400">{experience.position}</h3>
+                    <p className="text-cyan-400/70">{experience.company}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      onClick={() => {
+                        setSelectedContentType('experience')
+                        setSelectedContent(experience)
+                        setContentDialogOpen(true)
+                      }}
+                      className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteExperience(experience.id)}
+                      className="bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-sm text-cyan-400/70 mb-1">Duration</div>
+                    <p>
+                      {new Date(experience.start_date).toLocaleDateString('en-US', {
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                      {' - '}
+                      {experience.current ? (
+                        'Present'
+                      ) : experience.end_date ? (
+                        new Date(experience.end_date).toLocaleDateString('en-US', {
+                          month: 'long',
+                          year: 'numeric'
+                        })
+                      ) : ''}
+                    </p>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-cyan-400/70 mb-1">Mission</div>
+                    <p className="whitespace-pre-wrap">{experience.mission}</p>
+                  </div>
+
+                  <div>
+                    <div className="text-sm text-cyan-400/70 mb-1">Achievements</div>
+                    <ul className="list-disc list-inside space-y-1">
+                      {experience.achievements.map((achievement, index) => (
+                        <li key={index}>{achievement}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 } 

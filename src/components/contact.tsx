@@ -5,9 +5,11 @@ import { motion, useInView } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { supabase } from '@/lib/supabase'
+import type { Contact } from '@/lib/supabase'
 
 export default function Contact() {
-  const [formState, setFormState] = useState({
+  const [formState, setFormState] = useState<Omit<Contact, 'id' | 'status' | 'created_at' | 'updated_at'>>({
     name: '',
     email: '',
     subject: '',
@@ -40,10 +42,13 @@ export default function Contact() {
     setIsSubmitting(true)
     setFormError(null)
     
-    // Simulate form submission
     try {
-      // In a real application, you would send the form data to your backend
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      const { error } = await supabase
+        .from('contacts')
+        .insert([formState])
+
+      if (error) throw error
+      
       setIsSubmitted(true)
       setFormState({
         name: '',
@@ -52,6 +57,7 @@ export default function Contact() {
         message: ''
       })
     } catch (error) {
+      console.error('Error sending message:', error)
       setFormError('An error occurred while sending your message. Please try again.')
     } finally {
       setIsSubmitting(false)

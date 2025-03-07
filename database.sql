@@ -67,16 +67,16 @@ CREATE POLICY "Enable update for authenticated users only" ON "public"."profile"
 
 -- Create experiences table
 CREATE TABLE experiences (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company VARCHAR(255) NOT NULL,
-    position VARCHAR(255) NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE,
-    current BOOLEAN DEFAULT false,
-    mission TEXT NOT NULL,
-    achievements TEXT[] NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  company TEXT NOT NULL,
+  position TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE,
+  current BOOLEAN DEFAULT false,
+  mission TEXT NOT NULL,
+  achievements TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Insert sample experience data
@@ -102,24 +102,36 @@ INSERT INTO experiences (
     ]
 );
 
--- Set up RLS policies
+-- Enable Row Level Security (RLS)
 ALTER TABLE experiences ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Enable read access for all users" ON "public"."experiences"
-    FOR SELECT
-    USING (true);
+-- Create policies
+CREATE POLICY "Allow anonymous read access" ON experiences
+  FOR SELECT USING (true);
 
-CREATE POLICY "Enable insert for authenticated users only" ON "public"."experiences"
-    FOR INSERT
-    WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated create access" ON experiences
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Enable update for authenticated users only" ON "public"."experiences"
-    FOR UPDATE
-    USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated update access" ON experiences
+  FOR UPDATE USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Enable delete for authenticated users only" ON "public"."experiences"
-    FOR DELETE
-    USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow authenticated delete access" ON experiences
+  FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER update_experiences_updated_at
+  BEFORE UPDATE ON experiences
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
 
 -- Create skills table
 CREATE TABLE skills (
@@ -257,4 +269,47 @@ CREATE POLICY "Enable update for authenticated users only" ON "public"."projects
 
 CREATE POLICY "Enable delete for authenticated users only" ON "public"."projects"
     FOR DELETE
-    USING (auth.role() = 'authenticated'); 
+    USING (auth.role() = 'authenticated');
+
+-- Create contacts table
+CREATE TABLE contacts (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  subject TEXT NOT NULL,
+  message TEXT NOT NULL,
+  status TEXT DEFAULT 'unread' CHECK (status IN ('unread', 'read', 'replied')),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
+
+-- Create policies
+CREATE POLICY "Allow anonymous insert" ON contacts
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Allow authenticated users to read" ON contacts
+  FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated users to update" ON contacts
+  FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "Allow authenticated users to delete" ON contacts
+  FOR DELETE TO authenticated USING (true);
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = TIMEZONE('utc', NOW());
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to automatically update updated_at
+CREATE TRIGGER update_contacts_updated_at
+  BEFORE UPDATE ON contacts
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column(); 
