@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: "standalone",
   images: {
     remotePatterns: [
       {
@@ -7,6 +8,10 @@ const nextConfig = {
         hostname: "**",
       },
     ],
+    domains: ["res.cloudinary.com"],
+  },
+  experimental: {
+    serverActions: true,
   },
 };
 

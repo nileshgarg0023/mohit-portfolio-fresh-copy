@@ -899,7 +899,7 @@ export default function AdminPage() {
     fetchSkills();
     fetchBlogs();
     fetchProfile();
-  }, []);
+  }, [fetchExperiences, fetchProjects, fetchSkills, fetchBlogs, fetchProfile]);
 
   if (loading) {
     return (
