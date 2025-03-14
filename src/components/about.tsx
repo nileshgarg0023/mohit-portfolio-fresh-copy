@@ -20,10 +20,20 @@ export default function About() {
         const { data, error } = await supabase
           .from('profile')
           .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1)
           .single()
 
         if (error) throw error
-        setProfile(data)
+        
+        // Ensure arrays are properly initialized
+        const profileData = {
+          ...data,
+          core_competencies: Array.isArray(data.core_competencies) ? data.core_competencies : [],
+          specialized_skills: Array.isArray(data.specialized_skills) ? data.specialized_skills : []
+        }
+        
+        setProfile(profileData)
       } catch (error) {
         console.error('Error fetching profile:', error)
         setError('Failed to load profile data')

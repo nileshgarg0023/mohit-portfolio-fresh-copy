@@ -177,16 +177,99 @@ export function ContentDialog({
   onSubmit,
 }: ContentDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData>(() => {
-    if (initialData) {
-      return initialData as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData;
+    try {
+      if (initialData) {
+        const data = { ...initialData };
+        if (type === 'blog') {
+          const blogData = data as BlogFormData;
+          return {
+            ...blogData,
+            tags: Array.isArray(blogData.tags) ? blogData.tags : []
+          };
+        }
+        if (type === 'project') {
+          const projectData = data as ProjectFormData;
+          return {
+            ...projectData,
+            title: projectData.title || '',
+            description: projectData.description || '',
+            image_url: projectData.image_url || '',
+            tags: Array.isArray(projectData.tags) ? projectData.tags : [],
+            details: {
+              challenge: projectData.details?.challenge || '',
+              solution: projectData.details?.solution || '',
+              technologies: Array.isArray(projectData.details?.technologies) ? projectData.details.technologies : [],
+              outcome: projectData.details?.outcome || ''
+            },
+            color: projectData.color || 'from-cyan-500 to-blue-600'
+          };
+        }
+        if ('tags' in data) {
+          data.tags = Array.isArray(data.tags) ? data.tags : [];
+        }
+        if ('achievements' in data) {
+          data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
+        }
+        if ('core_competencies' in data) {
+          data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
+        }
+        if ('specialized_skills' in data) {
+          data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
+        }
+        return data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData;
+      }
+      return getDefaultData(type);
+    } catch (err) {
+      console.error('Error initializing form data:', err);
+      setError('Failed to initialize form data');
+      return getDefaultData(type);
     }
-    return getDefaultData(type);
   });
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData);
+      const data = { ...initialData };
+      if (type === 'blog') {
+        const blogData = data as BlogFormData;
+        setFormData({
+          ...blogData,
+          tags: Array.isArray(blogData.tags) ? blogData.tags : []
+        });
+        return;
+      }
+      if (type === 'project') {
+        const projectData = data as ProjectFormData;
+        setFormData({
+          ...projectData,
+          title: projectData.title || '',
+          description: projectData.description || '',
+          image_url: projectData.image_url || '',
+          tags: Array.isArray(projectData.tags) ? projectData.tags : [],
+          details: {
+            challenge: projectData.details?.challenge || '',
+            solution: projectData.details?.solution || '',
+            technologies: Array.isArray(projectData.details?.technologies) ? projectData.details.technologies : [],
+            outcome: projectData.details?.outcome || ''
+          },
+          color: projectData.color || 'from-cyan-500 to-blue-600'
+        });
+        return;
+      }
+      if ('tags' in data) {
+        data.tags = Array.isArray(data.tags) ? data.tags : [];
+      }
+      if ('achievements' in data) {
+        data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
+      }
+      if ('core_competencies' in data) {
+        data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
+      }
+      if ('specialized_skills' in data) {
+        data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
+      }
+      setFormData(data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData);
     } else {
       setFormData(getDefaultData(type));
     }
@@ -195,11 +278,13 @@ export function ContentDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
     try {
       await onSubmit(formData);
       onOpenChange(false);
     } catch (error) {
       console.error('Error submitting form:', error);
+      setError(error instanceof Error ? error.message : 'Failed to submit form');
     } finally {
       setLoading(false);
     }
@@ -210,7 +295,7 @@ export function ContentDialog({
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => {
-        const prevData = prev as unknown as { [key: string]: { [key: string]: string } };
+        const prevData = prev as unknown as { [key: string]: { [key: string]: string | string[] } };
         return {
           ...prev,
           [parent]: {
@@ -219,6 +304,16 @@ export function ContentDialog({
           }
         };
       });
+    } else if (name === 'core_competencies' || name === 'specialized_skills') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value.split(',').map(item => item.trim()).filter(Boolean)
+      }));
+    } else if (name === 'level') {
+      setFormData(prev => ({
+        ...prev,
+        [name]: parseInt(value, 10) || 0
+      }));
     } else {
       setFormData(prev => ({
         ...prev,
@@ -257,7 +352,7 @@ export function ContentDialog({
               <Input
                 id="title"
                 name="title"
-                value={projectData.title}
+                value={projectData.title || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -268,7 +363,7 @@ export function ContentDialog({
               <Textarea
                 id="description"
                 name="description"
-                value={projectData.description}
+                value={projectData.description || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -289,7 +384,7 @@ export function ContentDialog({
               <Textarea
                 id="tags"
                 name="tags"
-                value={projectData.tags.join('\n')}
+                value={Array.isArray(projectData.tags) ? projectData.tags.join('\n') : ''}
                 onChange={handleArrayChange}
                 className={inputClassName}
               />
@@ -299,7 +394,7 @@ export function ContentDialog({
               <Textarea
                 id="details.challenge"
                 name="details.challenge"
-                value={projectData.details.challenge}
+                value={projectData.details?.challenge || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -310,7 +405,7 @@ export function ContentDialog({
               <Textarea
                 id="details.solution"
                 name="details.solution"
-                value={projectData.details.solution}
+                value={projectData.details?.solution || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -321,7 +416,7 @@ export function ContentDialog({
               <Textarea
                 id="details.technologies"
                 name="details.technologies"
-                value={projectData.details.technologies.join('\n')}
+                value={Array.isArray(projectData.details?.technologies) ? projectData.details.technologies.join('\n') : ''}
                 onChange={handleArrayChange}
                 className={inputClassName}
                 required
@@ -332,7 +427,7 @@ export function ContentDialog({
               <Textarea
                 id="details.outcome"
                 name="details.outcome"
-                value={projectData.details.outcome}
+                value={projectData.details?.outcome || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -420,7 +515,7 @@ export function ContentDialog({
               <Textarea
                 id="achievements"
                 name="achievements"
-                value={experienceData.achievements.join('\n')}
+                value={Array.isArray(experienceData.achievements) ? experienceData.achievements.join('\n') : ''}
                 onChange={handleArrayChange}
                 className={inputClassName}
                 required
@@ -540,7 +635,7 @@ export function ContentDialog({
               <label htmlFor="tags" className={labelClassName}>Tags (comma-separated)</label>
               <Input
                 id="tags"
-                value={blogData.tags?.join(', ') || ''}
+                value={Array.isArray(blogData.tags) ? blogData.tags.join(', ') : ''}
                 onChange={(e) => setFormData({ 
                   ...blogData,
                   tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
@@ -621,7 +716,7 @@ export function ContentDialog({
               <Input
                 id="core_competencies"
                 name="core_competencies"
-                value={profileData.core_competencies.join(', ')}
+                value={Array.isArray(profileData.core_competencies) ? profileData.core_competencies.join(', ') : ''}
                 onChange={handleChange}
                 required
               />
@@ -631,7 +726,7 @@ export function ContentDialog({
               <Input
                 id="specialized_skills"
                 name="specialized_skills"
-                value={profileData.specialized_skills.join(', ')}
+                value={Array.isArray(profileData.specialized_skills) ? profileData.specialized_skills.join(', ') : ''}
                 onChange={handleChange}
                 required
               />
@@ -725,20 +820,26 @@ export function ContentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black/90 backdrop-blur-sm border-cyan-500/30 text-white">
+      <DialogContent className="bg-black/90 backdrop-blur-sm border-cyan-500/30 text-white max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">
             {initialData ? `Edit ${type}` : `Add new ${type}`}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-md">
+              {error}
+            </div>
+          )}
           {renderFormFields()}
-          <DialogFooter>
+          <DialogFooter className="sticky bottom-0 bg-black/90 py-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-950"
+              disabled={loading}
             >
               Cancel
             </Button>

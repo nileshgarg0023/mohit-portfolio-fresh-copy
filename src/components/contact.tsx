@@ -169,7 +169,7 @@ export default function Contact() {
                           </div>
                           <div>
                             <p className="text-xs text-gray-400">Email</p>
-                            <p className="text-sm text-white">mohit.gera@example.com</p>
+                            <p className="text-sm text-white">mohitgera.infosec@gmail.com</p>
                           </div>
                         </div>
                         
@@ -181,7 +181,7 @@ export default function Contact() {
                           </div>
                           <div>
                             <p className="text-xs text-gray-400">Phone</p>
-                            <p className="text-sm text-white">+91 98765 43210</p>
+                            <p className="text-sm text-white">+91 7792050879</p>
                           </div>
                         </div>
                         

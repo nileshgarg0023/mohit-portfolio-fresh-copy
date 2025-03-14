@@ -11,6 +11,7 @@ export default function Hero() {
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 })
   const [isHovering, setIsHovering] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   
   // Particles state
   const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, size: number}>>([])
@@ -30,8 +31,21 @@ export default function Hero() {
     return () => clearTimeout(timer)
   }, [])
 
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
   // Handle mouse movement
   useEffect(() => {
+    if (isMobile) return // Don't track mouse on mobile
+    
     const handleMouseMove = (e: MouseEvent) => {
       if (!containerRef.current) return
       
@@ -50,7 +64,7 @@ export default function Hero() {
     
     window.addEventListener('mousemove', handleMouseMove)
     return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [mouseX, mouseY])
+  }, [mouseX, mouseY, isMobile])
   
   // Transform values for 3D effect
   const rotateX = useTransform(mouseY, [0, 300], [10, -10])
@@ -65,8 +79,8 @@ export default function Hero() {
     <section 
       ref={containerRef}
       className="h-screen w-full flex flex-col justify-center items-center relative overflow-hidden bg-black"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
+      onMouseEnter={() => !isMobile && setIsHovering(true)}
+      onMouseLeave={() => !isMobile && setIsHovering(false)}
     >
       {/* Particle background */}
       <div className="absolute inset-0 z-0">
@@ -190,7 +204,12 @@ export default function Hero() {
                     transition={{ duration: 0.8, delay: 0.8 }}
                     className="flex flex-col sm:flex-row gap-4"
                   >
-                    <Button className="relative overflow-hidden group bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-black font-medium px-6 py-2 border-0">
+                    <Button 
+                      onClick={() => {
+                        document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="relative overflow-hidden group bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-black font-medium px-6 py-2 border-0"
+                    >
                       <span className="relative z-10">View Portfolio</span>
                       <motion.span 
                         className="absolute inset-0 bg-white"
@@ -200,7 +219,13 @@ export default function Hero() {
                         style={{ opacity: 0.2 }}
                       />
                     </Button>
-                    <Button variant="outline" className="relative overflow-hidden group border-cyan-500 text-cyan-500 hover:text-cyan-400 hover:bg-transparent px-6 py-2">
+                    <Button 
+                      onClick={() => {
+                        document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      variant="outline" 
+                      className="relative overflow-hidden group border-cyan-500 text-cyan-500 hover:text-cyan-400 hover:bg-transparent px-6 py-2"
+                    >
                       <span className="relative z-10">Contact Me</span>
                       <motion.span 
                         className="absolute inset-0 border border-cyan-500"
@@ -217,10 +242,10 @@ export default function Hero() {
         </div>
       </motion.div>
       
-      {/* Interactive cursor follower */}
-      {isHovering && (
+      {/* Interactive cursor follower - only show on non-mobile */}
+      {!isMobile && isHovering && (
         <motion.div
-          className="fixed w-20 h-20 rounded-full pointer-events-none z-50 mix-blend-screen"
+          className="fixed w-20 h-20 rounded-full pointer-events-none z-50 mix-blend-screen hidden md:block"
           style={{
             background: 'radial-gradient(circle, rgba(0,240,255,0.7) 0%, rgba(0,240,255,0) 70%)',
             left: mouseX,
