@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "build",
+  distDir: "build",
   images: {
     unoptimized: true,
     remotePatterns: [
