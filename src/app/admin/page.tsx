@@ -158,10 +158,12 @@ export default function AdminPage() {
       setLoading(true);
       setError(null);
 
-      // Fetch profile
+      // Fetch profile - get the most recent one
       const { data: profileData, error: profileError } = await supabase
         .from('profile')
         .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
         .single();
       
       if (profileError) {
@@ -292,7 +294,9 @@ export default function AdminPage() {
   const handleProfileEdit = () => {
     setDialogType('profile');
     setEditingItem(profile);
-    setDialogOpen(true);
+    setSelectedContentType('profile');
+    setSelectedContent(profile);
+    setContentDialogOpen(true);
   };
 
   const handleContentSubmit = async (data: FormData) => {
@@ -414,16 +418,60 @@ export default function AdminPage() {
     }
   };
 
-  const handleAddNew = (type: 'project' | 'experience' | 'skill' | 'blog') => {
+  const handleEdit = (item: ContentItem, type: 'project' | 'experience' | 'skill' | 'blog' | 'profile') => {
+    console.log('Edit button clicked:', { item, type });
+    
+    // Process item based on its type
+    let processedItem = { ...item };
+    
+    switch (type) {
+      case 'project':
+        const projectItem = item as Project;
+        processedItem = {
+          ...projectItem,
+          tags: Array.isArray(projectItem.tags) ? projectItem.tags : [],
+          details: {
+            ...projectItem.details,
+            technologies: Array.isArray(projectItem.details?.technologies) ? projectItem.details.technologies : []
+          }
+        };
+        break;
+      
+      case 'experience':
+        const experienceItem = item as Experience;
+        processedItem = {
+          ...experienceItem,
+          achievements: Array.isArray(experienceItem.achievements) ? experienceItem.achievements : []
+        };
+        break;
+      
+      case 'profile':
+        const profileItem = item as Profile;
+        processedItem = {
+          ...profileItem,
+          core_competencies: Array.isArray(profileItem.core_competencies) ? profileItem.core_competencies : [],
+          specialized_skills: Array.isArray(profileItem.specialized_skills) ? profileItem.specialized_skills : []
+        };
+        break;
+      
+      default:
+        // For other types (skill, blog), no special processing needed
+        break;
+    }
+
     setDialogType(type);
-    setEditingItem(null);
-    setDialogOpen(true);
+    setEditingItem(processedItem);
+    setSelectedContentType(type);
+    setSelectedContent(processedItem);
+    setContentDialogOpen(true);
   };
 
-  const handleEdit = (item: ContentItem, type: 'project' | 'experience' | 'skill' | 'blog') => {
+  const handleAddNew = (type: 'project' | 'experience' | 'skill' | 'blog' | 'profile') => {
     setDialogType(type);
-    setEditingItem(item);
-    setDialogOpen(true);
+    setEditingItem(null);
+    setSelectedContentType(type);
+    setSelectedContent(null);
+    setContentDialogOpen(true);
   };
 
   const handleDelete = (item: ContentItemWithType) => {
@@ -670,7 +718,7 @@ export default function AdminPage() {
     try {
       console.log('Updating profile:', formData);
       const { error } = await supabase
-        .from('profiles')
+        .from('profile')
         .update(formData)
         .eq('id', formData.id);
 
@@ -771,12 +819,29 @@ export default function AdminPage() {
 
   const fetchProfile = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('No user found');
+        toast.error('No user found');
+        return;
+      }
+
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profile')
         .select('*')
+        .eq('id', user.id)
         .single();
 
       if (error) {
+        if (error.code === 'PGRST116') { // No rows returned
+          // Profile doesn't exist, create one
+          const newProfile = await createProfile(user.id);
+          if (newProfile) {
+            setProfile(newProfile);
+            return;
+          }
+        }
         console.error('Error fetching profile:', error);
         toast.error('Failed to fetch profile');
         return;
@@ -789,6 +854,44 @@ export default function AdminPage() {
     }
   };
 
+  const createProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profile')
+        .insert([
+          {
+            id: userId,
+            name: 'Your Name',
+            title: 'Your Title',
+            bio: 'Your Bio',
+            years_of_experience: '5+',
+            companies: 'Company 1, Company 2',
+            core_competencies: ['Skill 1', 'Skill 2'],
+            specialized_skills: ['Specialized 1', 'Specialized 2'],
+            approach_text: 'Your approach text',
+            security_audits_count: '100+',
+            vulnerabilities_count: '50+',
+            architectures_count: '20+',
+            certifications_count: '10+'
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        toast.error('Failed to create profile');
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('An unexpected error occurred');
+      return null;
+    }
+  };
+
   // Add useEffect to fetch initial data
   useEffect(() => {
     fetchExperiences();
@@ -796,7 +899,7 @@ export default function AdminPage() {
     fetchSkills();
     fetchBlogs();
     fetchProfile();
-  }, []);
+  }, [fetchExperiences, fetchProjects, fetchSkills, fetchBlogs, fetchProfile]);
 
   if (loading) {
     return (
@@ -1210,10 +1313,19 @@ export default function AdminPage() {
       <ContentDialog
         type={selectedContentType}
         open={contentDialogOpen}
-        onOpenChange={setContentDialogOpen}
+        onOpenChange={(open) => {
+          console.log('Dialog open state changing to:', open);
+          setContentDialogOpen(open);
+          if (!open) {
+            // Reset states when dialog closes
+            setEditingItem(null);
+            setSelectedContent(null);
+          }
+        }}
         initialData={selectedContent}
         onSubmit={async (data) => {
           try {
+            console.log('Submitting data:', data);
             switch (selectedContentType) {
               case 'experience':
                 if (selectedContent) {

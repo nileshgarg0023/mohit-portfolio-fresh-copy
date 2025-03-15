@@ -113,7 +113,7 @@ export default function Footer() {
               >
                 <div className="flex items-center text-gray-400">
                   <span className="text-cyan-500 mr-2">@</span>
-                  mohit.gera@example.com
+                  mohitgera.infosec@gmail.com
                 </div>
                 <div className="flex items-center text-gray-400">
                   <span className="text-cyan-500 mr-2">#</span>
