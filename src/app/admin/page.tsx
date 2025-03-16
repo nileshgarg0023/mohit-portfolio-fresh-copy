@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -149,136 +149,56 @@ export default function AdminPage() {
   const [selectedContent, setSelectedContent] = useState<ContentItemWithType | null>(null);
   const [contentDialogOpen, setContentDialogOpen] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  // Memoize fetch functions to prevent infinite re-renders
+  const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch profile - get the most recent one
-      const { data: profileData, error: profileError } = await supabase
-        .from('profile')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
       
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        setError('Error loading profile data');
-      } else {
-        setProfile(profileData);
-      }
-
-      // Fetch projects with technologies as array
-      const { data: projectsData, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (projectsError) {
-        console.error('Error fetching projects:', projectsError);
-        setError('Error loading projects');
-      } else {
-        setProjects(projectsData || []);
-      }
-
-      // Fetch experiences
-      const { data: experiencesData, error: experiencesError } = await supabase
-        .from('experiences')
-        .select('*')
-        .order('start_date', { ascending: false });
-      
-      if (experiencesError) {
-        console.error('Error fetching experiences:', experiencesError);
-        setError('Error loading experiences');
-      } else {
-        setExperiences(experiencesData || []);
-      }
-
-      // Fetch skills
-      const { data: skillsData, error: skillsError } = await supabase
-        .from('skills')
-        .select('*')
-        .order('category', { ascending: true });
-      
-      if (skillsError) {
-        console.error('Error fetching skills:', skillsError);
-        setError('Error loading skills');
-      } else {
-        setSkills(skillsData || []);
-      }
-
-      // Fetch contacts
-      const { data: contactsData, error: contactsError } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (contactsError) {
-        console.error('Error fetching contacts:', contactsError);
-        setError('Error loading contacts');
-      } else {
-        setContacts(contactsData || []);
-      }
-
-      // Fetch blogs with tags as array
-      const { data: blogsData, error: blogsError } = await supabase
-        .from('blogs')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (blogsError) {
-        console.error('Error fetching blogs:', blogsError);
-        setError('Error loading blogs');
-      } else {
-        setBlogs(blogsData || []);
-      }
+      await Promise.all([
+        fetchExperiences(),
+        fetchProjects(),
+        fetchSkills(),
+        fetchBlogs(),
+        fetchProfile()
+      ]);
     } catch (err) {
       console.error('Error fetching data:', err);
       setError('Error loading data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array since these functions don't depend on any props or state
 
-  // Add real-time subscriptions for live updates
+  // Add useEffect to fetch initial data
   useEffect(() => {
+    fetchAllData();
+    
+    // Set up real-time subscriptions
     const profileSubscription = supabase
       .channel('profile-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profile' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profile' }, fetchAllData)
       .subscribe();
 
     const projectsSubscription = supabase
       .channel('projects-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, fetchAllData)
       .subscribe();
 
     const experiencesSubscription = supabase
       .channel('experiences-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'experiences' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'experiences' }, fetchAllData)
       .subscribe();
 
     const skillsSubscription = supabase
       .channel('skills-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'skills' }, fetchData)
-      .subscribe();
-
-    const contactsSubscription = supabase
-      .channel('contacts-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'skills' }, fetchAllData)
       .subscribe();
 
     const blogsSubscription = supabase
       .channel('blogs-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'blogs' }, fetchAllData)
       .subscribe();
-
-    // Initial fetch
-    fetchData();
 
     // Cleanup subscriptions
     return () => {
@@ -286,10 +206,9 @@ export default function AdminPage() {
       projectsSubscription.unsubscribe();
       experiencesSubscription.unsubscribe();
       skillsSubscription.unsubscribe();
-      contactsSubscription.unsubscribe();
       blogsSubscription.unsubscribe();
     };
-  }, []);
+  }, [fetchAllData]); // Only depend on the memoized fetchAllData function
 
   const handleProfileEdit = () => {
     setDialogType('profile');
@@ -407,7 +326,7 @@ export default function AdminPage() {
       }
       
       setUpdateMessage({ type: 'success', text: `${dialogType} ${editingItem ? 'updated' : 'added'} successfully!` });
-      fetchData();
+      fetchAllData();
     } catch (error) {
       console.error(`Error ${editingItem ? 'updating' : 'adding'} ${dialogType}:`, error);
       setUpdateMessage({ type: 'error', text: `Failed to ${editingItem ? 'update' : 'add'} ${dialogType}` });
@@ -534,7 +453,7 @@ export default function AdminPage() {
       }
 
       toast.success('Experience added successfully');
-      fetchExperiences();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -556,7 +475,7 @@ export default function AdminPage() {
       }
 
       toast.success('Experience updated successfully');
-      fetchExperiences();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -578,7 +497,7 @@ export default function AdminPage() {
       }
 
       toast.success('Experience deleted successfully');
-      fetchExperiences();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -599,7 +518,7 @@ export default function AdminPage() {
       }
 
       toast.success('Project added successfully');
-      fetchProjects();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -621,7 +540,7 @@ export default function AdminPage() {
       }
 
       toast.success('Project updated successfully');
-      fetchProjects();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -642,7 +561,7 @@ export default function AdminPage() {
       }
 
       toast.success('Skill added successfully');
-      fetchSkills();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -664,7 +583,7 @@ export default function AdminPage() {
       }
 
       toast.success('Skill updated successfully');
-      fetchSkills();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -685,7 +604,7 @@ export default function AdminPage() {
       }
 
       toast.success('Blog added successfully');
-      fetchBlogs();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -707,7 +626,7 @@ export default function AdminPage() {
       }
 
       toast.success('Blog updated successfully');
-      fetchBlogs();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -729,7 +648,7 @@ export default function AdminPage() {
       }
 
       toast.success('Profile updated successfully');
-      fetchProfile();
+      fetchAllData();
     } catch (error) {
       console.error('Error:', error);
       toast.error('An unexpected error occurred');
@@ -827,6 +746,7 @@ export default function AdminPage() {
         return;
       }
 
+      // Try to get the profile with the specific UUID
       const { data, error } = await supabase
         .from('profile')
         .select('*')
@@ -834,16 +754,42 @@ export default function AdminPage() {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') { // No rows returned
-          // Profile doesn't exist, create one
+        if (error.code === 'PGRST116') { // Only create new profile if none exists for this user
+          console.log('No profile found for user, checking if profile exists with UUID');
+          const { data: existingProfile, error: existingError } = await supabase
+            .from('profile')
+            .select('*')
+            .eq('id', '55a88178-8b60-42b0-a3ae-280d7bb53a96')
+            .single();
+
+          if (existingProfile) {
+            console.log('Found existing profile, updating user ID');
+            // Update the existing profile with the new user ID
+            const { data: updatedProfile, error: updateError } = await supabase
+              .from('profile')
+              .update({ id: user.id })
+              .eq('id', '55a88178-8b60-42b0-a3ae-280d7bb53a96')
+              .select()
+              .single();
+
+            if (updateError) {
+              console.error('Error updating profile ID:', updateError);
+              toast.error('Failed to update profile');
+              return;
+            }
+            setProfile(updatedProfile);
+            return;
+          }
+
+          // If no profile exists at all, create a new one
           const newProfile = await createProfile(user.id);
           if (newProfile) {
             setProfile(newProfile);
-            return;
           }
+        } else {
+          console.error('Error fetching profile:', error);
+          toast.error('Failed to fetch profile');
         }
-        console.error('Error fetching profile:', error);
-        toast.error('Failed to fetch profile');
         return;
       }
 
@@ -856,6 +802,33 @@ export default function AdminPage() {
 
   const createProfile = async (userId: string) => {
     try {
+      // Check if profile exists with either the user ID or the specific UUID
+      const { data: existingProfile } = await supabase
+        .from('profile')
+        .select('*')
+        .or(`id.eq.${userId},id.eq.55a88178-8b60-42b0-a3ae-280d7bb53a96`)
+        .single();
+
+      if (existingProfile) {
+        console.log('Profile already exists, updating user ID if needed');
+        if (existingProfile.id !== userId) {
+          const { data: updatedProfile, error: updateError } = await supabase
+            .from('profile')
+            .update({ id: userId })
+            .eq('id', existingProfile.id)
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error('Error updating profile ID:', updateError);
+            return existingProfile;
+          }
+          return updatedProfile;
+        }
+        return existingProfile;
+      }
+
+      // Only create new profile if none exists
       const { data, error } = await supabase
         .from('profile')
         .insert([
@@ -891,15 +864,6 @@ export default function AdminPage() {
       return null;
     }
   };
-
-  // Add useEffect to fetch initial data
-  useEffect(() => {
-    fetchExperiences();
-    fetchProjects();
-    fetchSkills();
-    fetchBlogs();
-    fetchProfile();
-  }, [fetchExperiences, fetchProjects, fetchSkills, fetchBlogs, fetchProfile]);
 
   if (loading) {
     return (
@@ -1362,7 +1326,7 @@ export default function AdminPage() {
                 throw new Error('Invalid content type');
             }
             setContentDialogOpen(false);
-            fetchData(); // Refresh all data after any change
+            fetchAllData(); // Refresh all data after any change
           } catch (error) {
             console.error('Error in onSubmit:', error);
             toast.error(`Failed to ${selectedContent ? 'update' : 'add'} ${selectedContentType}`);
