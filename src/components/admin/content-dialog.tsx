@@ -179,51 +179,46 @@ export function ContentDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData>(() => {
-    try {
-      if (initialData) {
-        const data = { ...initialData };
-        if (type === 'blog') {
-          const blogData = data as BlogFormData;
-          return {
-            ...blogData,
-            tags: Array.isArray(blogData.tags) ? blogData.tags : []
-          };
-        }
-        if (type === 'project') {
-          const projectData = data as ProjectFormData;
-          return {
-            ...projectData,
-            title: projectData.title || '',
-            description: projectData.description || '',
-            image_url: projectData.image_url || '',
-            tags: Array.isArray(projectData.tags) ? projectData.tags : [],
-            details: {
-              challenge: projectData.details?.challenge || '',
-              solution: projectData.details?.solution || '',
-              technologies: Array.isArray(projectData.details?.technologies) ? projectData.details.technologies : [],
-              outcome: projectData.details?.outcome || ''
-            },
-            color: projectData.color || 'from-cyan-500 to-blue-600'
-          };
-        }
-        if ('tags' in data) {
-          data.tags = Array.isArray(data.tags) ? data.tags : [];
-        }
-        if ('achievements' in data) {
-          data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
-        }
-        if ('core_competencies' in data) {
-          data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
-        }
-        if ('specialized_skills' in data) {
-          data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
-        }
-        return data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData;
+    if (initialData) {
+      const data = { ...initialData };
+      if (type === 'blog') {
+        const blogData = data as BlogFormData;
+        return {
+          ...blogData,
+          tags: Array.isArray(blogData.tags) ? blogData.tags : []
+        };
       }
-      return getDefaultData(type);
-    } catch (err) {
-      console.error('Error initializing form data:', err);
-      setError('Failed to initialize form data');
+      if (type === 'project') {
+        const projectData = data as ProjectFormData;
+        return {
+          ...projectData,
+          title: projectData.title || '',
+          description: projectData.description || '',
+          image_url: projectData.image_url || '',
+          tags: Array.isArray(projectData.tags) ? projectData.tags : [],
+          details: {
+            challenge: projectData.details?.challenge || '',
+            solution: projectData.details?.solution || '',
+            technologies: Array.isArray(projectData.details?.technologies) ? projectData.details.technologies : [],
+            outcome: projectData.details?.outcome || ''
+          },
+          color: projectData.color || 'from-cyan-500 to-blue-600'
+        };
+      }
+      if ('tags' in data) {
+        data.tags = Array.isArray(data.tags) ? data.tags : [];
+      }
+      if ('achievements' in data) {
+        data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
+      }
+      if ('core_competencies' in data) {
+        data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
+      }
+      if ('specialized_skills' in data) {
+        data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
+      }
+      return data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData;
+    } else {
       return getDefaultData(type);
     }
   });
@@ -237,9 +232,7 @@ export function ContentDialog({
           ...blogData,
           tags: Array.isArray(blogData.tags) ? blogData.tags : []
         });
-        return;
-      }
-      if (type === 'project') {
+      } else if (type === 'project') {
         const projectData = data as ProjectFormData;
         setFormData({
           ...projectData,
@@ -255,21 +248,21 @@ export function ContentDialog({
           },
           color: projectData.color || 'from-cyan-500 to-blue-600'
         });
-        return;
+      } else {
+        if ('tags' in data) {
+          data.tags = Array.isArray(data.tags) ? data.tags : [];
+        }
+        if ('achievements' in data) {
+          data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
+        }
+        if ('core_competencies' in data) {
+          data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
+        }
+        if ('specialized_skills' in data) {
+          data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
+        }
+        setFormData(data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData);
       }
-      if ('tags' in data) {
-        data.tags = Array.isArray(data.tags) ? data.tags : [];
-      }
-      if ('achievements' in data) {
-        data.achievements = Array.isArray(data.achievements) ? data.achievements : [];
-      }
-      if ('core_competencies' in data) {
-        data.core_competencies = Array.isArray(data.core_competencies) ? data.core_competencies : [];
-      }
-      if ('specialized_skills' in data) {
-        data.specialized_skills = Array.isArray(data.specialized_skills) ? data.specialized_skills : [];
-      }
-      setFormData(data as ProjectFormData | ExperienceFormData | SkillFormData | BlogFormData | ProfileFormData);
     } else {
       setFormData(getDefaultData(type));
     }
@@ -444,7 +437,7 @@ export function ContentDialog({
               <Input
                 id="company"
                 name="company"
-                value={experienceData.company}
+                value={experienceData.company || ''}
                 onChange={handleChange}
                 className={inputClassName}
                 required
@@ -528,12 +521,13 @@ export function ContentDialog({
         return (
           <>
             <div>
-              <label htmlFor="name" className={labelClassName}>Skill Name</label>
+              <label htmlFor="name" className={labelClassName}>Name</label>
               <Input
                 id="name"
                 name="name"
-                value={skillData.name}
+                value={skillData.name || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -544,6 +538,7 @@ export function ContentDialog({
                 name="category"
                 value={skillData.category}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -557,6 +552,7 @@ export function ContentDialog({
                 max="100"
                 value={skillData.level}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -587,8 +583,10 @@ export function ContentDialog({
               <label htmlFor="title" className={labelClassName}>Title</label>
               <Input
                 id="title"
-                value={blogData.title}
+                name="title"
+                value={blogData.title || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -596,11 +594,10 @@ export function ContentDialog({
               <label htmlFor="slug" className={labelClassName}>Slug</label>
               <Input
                 id="slug"
-                value={blogData.slug}
-                onChange={(e) => setFormData({ 
-                  ...blogData,
-                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-') 
-                })}
+                name="slug"
+                value={blogData.slug || ''}
+                onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -608,7 +605,8 @@ export function ContentDialog({
               <label htmlFor="excerpt" className={labelClassName}>Excerpt</label>
               <Textarea
                 id="excerpt"
-                value={blogData.excerpt}
+                name="excerpt"
+                value={blogData.excerpt || ''}
                 onChange={handleChange}
                 className={inputClassName}
               />
@@ -617,8 +615,10 @@ export function ContentDialog({
               <label htmlFor="content" className={labelClassName}>Content</label>
               <Textarea
                 id="content"
-                value={blogData.content}
+                name="content"
+                value={blogData.content || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -626,7 +626,8 @@ export function ContentDialog({
               <label htmlFor="image_url" className={labelClassName}>Image URL</label>
               <Input
                 id="image_url"
-                value={blogData.image_url}
+                name="image_url"
+                value={blogData.image_url || ''}
                 onChange={handleChange}
                 className={inputClassName}
               />
@@ -635,11 +636,9 @@ export function ContentDialog({
               <label htmlFor="tags" className={labelClassName}>Tags (comma-separated)</label>
               <Input
                 id="tags"
+                name="tags"
                 value={Array.isArray(blogData.tags) ? blogData.tags.join(', ') : ''}
-                onChange={(e) => setFormData({ 
-                  ...blogData,
-                  tags: e.target.value.split(',').map(tag => tag.trim()).filter(Boolean)
-                })}
+                onChange={handleChange}
                 className={inputClassName}
               />
             </div>
@@ -648,8 +647,9 @@ export function ContentDialog({
                 <input
                   type="checkbox"
                   id="published"
-                  checked={blogData.published}
-                  onChange={(e) => setFormData({ ...blogData, published: e.target.checked })}
+                  name="published"
+                  checked={blogData.published || false}
+                  onChange={handleCheckboxChange}
                   className="accent-cyan-400 h-4 w-4 rounded border-cyan-400/30"
                 />
                 Published
@@ -666,8 +666,9 @@ export function ContentDialog({
               <Input
                 id="name"
                 name="name"
-                value={profileData.name}
+                value={profileData.name || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -676,8 +677,9 @@ export function ContentDialog({
               <Input
                 id="title"
                 name="title"
-                value={profileData.title}
+                value={profileData.title || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -686,8 +688,9 @@ export function ContentDialog({
               <Textarea
                 id="bio"
                 name="bio"
-                value={profileData.bio}
+                value={profileData.bio || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -696,8 +699,9 @@ export function ContentDialog({
               <Input
                 id="years_of_experience"
                 name="years_of_experience"
-                value={profileData.years_of_experience}
+                value={profileData.years_of_experience || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -706,8 +710,9 @@ export function ContentDialog({
               <Input
                 id="companies"
                 name="companies"
-                value={profileData.companies}
+                value={profileData.companies || ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -718,6 +723,7 @@ export function ContentDialog({
                 name="core_competencies"
                 value={Array.isArray(profileData.core_competencies) ? profileData.core_competencies.join(', ') : ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -728,6 +734,7 @@ export function ContentDialog({
                 name="specialized_skills"
                 value={Array.isArray(profileData.specialized_skills) ? profileData.specialized_skills.join(', ') : ''}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -738,6 +745,7 @@ export function ContentDialog({
                 name="approach_text"
                 value={profileData.approach_text}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -748,6 +756,7 @@ export function ContentDialog({
                 name="security_audits_count"
                 value={profileData.security_audits_count}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -758,6 +767,7 @@ export function ContentDialog({
                 name="vulnerabilities_count"
                 value={profileData.vulnerabilities_count}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -768,6 +778,7 @@ export function ContentDialog({
                 name="architectures_count"
                 value={profileData.architectures_count}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -778,6 +789,7 @@ export function ContentDialog({
                 name="certifications_count"
                 value={profileData.certifications_count}
                 onChange={handleChange}
+                className={inputClassName}
                 required
               />
             </div>
@@ -820,35 +832,25 @@ export function ContentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-black/90 backdrop-blur-sm border-cyan-500/30 text-white max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-gray-900 text-white border-cyan-800 max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-cyan-400">
             {initialData ? `Edit ${type}` : `Add new ${type}`}
           </DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Fill in the details below to {initialData ? 'update' : 'create'} a {type}.
+          </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-400 p-3 rounded-md">
-              {error}
-            </div>
-          )}
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {renderFormFields()}
-          <DialogFooter className="sticky bottom-0 bg-black/90 py-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="border-cyan-500/30 text-cyan-400 hover:bg-cyan-950"
+          {error && <div className="text-red-500">{error}</div>}
+          <DialogFooter>
+            <Button 
+              type="submit" 
               disabled={loading}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700"
             >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-cyan-500 text-black hover:bg-cyan-600"
-            >
-              {loading ? 'Creating...' : (initialData ? 'Update' : 'Create')}
+              {loading ? 'Saving...' : initialData ? 'Update' : 'Create'}
             </Button>
           </DialogFooter>
         </form>

@@ -636,9 +636,25 @@ export default function AdminPage() {
   const handleProfileUpdate = async (formData: Profile) => {
     try {
       console.log('Updating profile:', formData);
+      
+      // Ensure arrays are properly formatted
+      const profileData = {
+        ...formData,
+        core_competencies: Array.isArray(formData.core_competencies) 
+          ? formData.core_competencies 
+          : typeof formData.core_competencies === 'string'
+            ? (formData.core_competencies as string).split(',').map((item: string) => item.trim()).filter(Boolean)
+            : [],
+        specialized_skills: Array.isArray(formData.specialized_skills) 
+          ? formData.specialized_skills 
+          : typeof formData.specialized_skills === 'string'
+            ? (formData.specialized_skills as string).split(',').map((item: string) => item.trim()).filter(Boolean)
+            : []
+      };
+      
       const { error } = await supabase
         .from('profile')
-        .update(formData)
+        .update(profileData)
         .eq('id', formData.id);
 
       if (error) {
@@ -746,7 +762,7 @@ export default function AdminPage() {
         return;
       }
 
-      // Try to get the profile with the specific UUID
+      // First try to get the profile with the current user ID
       const { data, error } = await supabase
         .from('profile')
         .select('*')
@@ -754,21 +770,29 @@ export default function AdminPage() {
         .single();
 
       if (error) {
-        if (error.code === 'PGRST116') { // Only create new profile if none exists for this user
-          console.log('No profile found for user, checking if profile exists with UUID');
-          const { data: existingProfile, error: existingError } = await supabase
+        if (error.code === 'PGRST116') { // No profile found for this user
+          console.log('No profile found for current user, checking if any profile exists');
+          
+          // Check if any profile exists in the database
+          const { data: existingProfiles, error: listError } = await supabase
             .from('profile')
-            .select('*')
-            .eq('id', '55a88178-8b60-42b0-a3ae-280d7bb53a96')
-            .single();
-
-          if (existingProfile) {
+            .select('*');
+            
+          if (listError) {
+            console.error('Error checking for existing profiles:', listError);
+            toast.error('Failed to check for existing profiles');
+            return;
+          }
+          
+          if (existingProfiles && existingProfiles.length > 0) {
+            // Use the first profile found and update its ID to the current user
             console.log('Found existing profile, updating user ID');
-            // Update the existing profile with the new user ID
+            const existingProfile = existingProfiles[0];
+            
             const { data: updatedProfile, error: updateError } = await supabase
               .from('profile')
               .update({ id: user.id })
-              .eq('id', '55a88178-8b60-42b0-a3ae-280d7bb53a96')
+              .eq('id', existingProfile.id)
               .select()
               .single();
 
@@ -777,11 +801,13 @@ export default function AdminPage() {
               toast.error('Failed to update profile');
               return;
             }
+            
             setProfile(updatedProfile);
             return;
           }
 
           // If no profile exists at all, create a new one
+          console.log('No profiles found, creating new profile');
           const newProfile = await createProfile(user.id);
           if (newProfile) {
             setProfile(newProfile);
@@ -802,52 +828,29 @@ export default function AdminPage() {
 
   const createProfile = async (userId: string) => {
     try {
-      // Check if profile exists with either the user ID or the specific UUID
-      const { data: existingProfile } = await supabase
-        .from('profile')
-        .select('*')
-        .or(`id.eq.${userId},id.eq.55a88178-8b60-42b0-a3ae-280d7bb53a96`)
-        .single();
+      // Create a new profile with default values
+      const defaultProfile = {
+        id: userId,
+        name: 'Your Name',
+        title: 'Your Title',
+        bio: 'Your bio goes here',
+        years_of_experience: '0',
+        companies: 'Your Companies',
+        core_competencies: ['Skill 1', 'Skill 2', 'Skill 3'],
+        specialized_skills: ['Specialized Skill 1', 'Specialized Skill 2'],
+        approach_text: 'Your approach to work',
+        security_audits_count: '0',
+        vulnerabilities_count: '0',
+        architectures_count: '0',
+        certifications_count: '0',
+        github_url: '',
+        linkedin_url: '',
+        twitter_url: ''
+      };
 
-      if (existingProfile) {
-        console.log('Profile already exists, updating user ID if needed');
-        if (existingProfile.id !== userId) {
-          const { data: updatedProfile, error: updateError } = await supabase
-            .from('profile')
-            .update({ id: userId })
-            .eq('id', existingProfile.id)
-            .select()
-            .single();
-
-          if (updateError) {
-            console.error('Error updating profile ID:', updateError);
-            return existingProfile;
-          }
-          return updatedProfile;
-        }
-        return existingProfile;
-      }
-
-      // Only create new profile if none exists
       const { data, error } = await supabase
         .from('profile')
-        .insert([
-          {
-            id: userId,
-            name: 'Your Name',
-            title: 'Your Title',
-            bio: 'Your Bio',
-            years_of_experience: '5+',
-            companies: 'Company 1, Company 2',
-            core_competencies: ['Skill 1', 'Skill 2'],
-            specialized_skills: ['Specialized 1', 'Specialized 2'],
-            approach_text: 'Your approach text',
-            security_audits_count: '100+',
-            vulnerabilities_count: '50+',
-            architectures_count: '20+',
-            certifications_count: '10+'
-          }
-        ])
+        .insert(defaultProfile)
         .select()
         .single();
 
@@ -857,6 +860,7 @@ export default function AdminPage() {
         return null;
       }
 
+      toast.success('New profile created successfully');
       return data;
     } catch (error) {
       console.error('Error:', error);
